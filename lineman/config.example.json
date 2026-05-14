@@ -234,14 +234,14 @@
         "id": "proxy1",
         "name": "Datacenter 45.155.200.232",
         "url": "http://USER:PASS@HOST:PORT",
-        "priority": 1,
+        "priority": 3,
         "enabled": true
       },
       {
         "id": "iproyal",
         "name": "iProyal Residential",
         "url": "http://USER:PASS@HOST:PORT",
-        "priority": 2,
+        "priority": 1,
         "enabled": true
       }
     ],
