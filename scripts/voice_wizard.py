@@ -17,13 +17,17 @@ BOT_TOKEN = _load_bot_token()
 VOICES_JSON = os.path.expanduser("~/.openclaw/voices.json")
 CHAT_ID = "36910539"
 API = f"https://api.telegram.org/bot{BOT_TOKEN}"
+LINEMAN_PROXY = "http://127.0.0.1:9090"
+_OPENER = urllib.request.build_opener(
+    urllib.request.ProxyHandler({"http": LINEMAN_PROXY, "https": LINEMAN_PROXY})
+)
 
 def tg(method, data=None):
     url = f"{API}/{method}"
     if data:
         data = urllib.parse.urlencode(data).encode()
     req = urllib.request.Request(url, data=data)
-    with urllib.request.urlopen(req, timeout=15) as r:
+    with _OPENER.open(req, timeout=15) as r:
         return json.loads(r.read())
 
 def load_data():

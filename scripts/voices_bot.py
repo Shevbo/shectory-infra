@@ -22,15 +22,18 @@ BOT_TOKEN = _load_bot_token()
 VOICES_SCRIPT = os.path.expanduser("~/skills/voice-profiles/scripts/voices.py")
 CHAT_ID = "36910539"
 API = f"https://api.telegram.org/bot{BOT_TOKEN}"
+_LINEMAN = "http://127.0.0.1:9090"
 
 def tg(method, data=None):
-    """Вызов Telegram Bot API."""
+    """Вызов Telegram Bot API через Lineman прокси."""
     import urllib.request, urllib.parse
     url = f"{API}/{method}"
     if data:
         data = urllib.parse.urlencode(data).encode()
     req = urllib.request.Request(url, data=data)
-    with urllib.request.urlopen(req) as r:
+    proxy = urllib.request.ProxyHandler({"http": _LINEMAN, "https": _LINEMAN})
+    opener = urllib.request.build_opener(proxy)
+    with opener.open(req) as r:
         return json.loads(r.read())
 
 def run_voices(*args):
