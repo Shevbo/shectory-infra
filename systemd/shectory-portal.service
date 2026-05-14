@@ -1,0 +1,18 @@
+[Unit]
+Description=Shectory Portal Next.js
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/shectory/workspaces/CursorRPA/shectory-portal
+Environment=NODE_ENV=production
+EnvironmentFile=/home/shectory/workspaces/CursorRPA/shectory-portal/.env
+ExecStart=/usr/bin/npm start
+Restart=always
+RestartSec=5
+KillMode=process
+TimeoutStopSec=10
+
+[Install]
+WantedBy=default.target

@@ -1,0 +1,46 @@
+# Secrets
+*.env
+.env.*
+*_password
+*_token
+*_secret
+config.json
+auth-profiles.json
+openclaw.json
+
+# Runtime / DB
+*.db
+*.db-shm
+*.db-wal
+state.json
+harvester_state.json
+metrics.json
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+*.egg-info/
+
+# Node
+node_modules/
+dist/
+.next/
+
+# OS
+.DS_Store
+*.swp
+*~
+
+# Logs
+*.log
+/logs/
+
+# Claude runtime
+.claude/cache/
+.claude/sessions/
+.claude/telemetry/
+.claude/history.jsonl
+.claude/.credentials.json

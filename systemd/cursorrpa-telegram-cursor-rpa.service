@@ -1,0 +1,15 @@
+[Unit]
+Description=CursorRPA Telegram bot (cursor-rpa)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/shectory/workspaces/CursorRPA/services/telegram-bridge
+EnvironmentFile=/home/shectory/workspaces/CursorRPA/services/telegram-bridge/project-envs/cursor-rpa.env
+ExecStart=/home/shectory/workspaces/CursorRPA/services/telegram-bridge/.venv/bin/python /home/shectory/workspaces/CursorRPA/services/telegram-bridge/bot.py
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target
