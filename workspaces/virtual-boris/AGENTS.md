@@ -5,6 +5,16 @@
 Кто есть кто: `/home/shectory/FEDERATION.md`
 Все внешние API (Telegram, Google, DeepSeek) — строго через `http://127.0.0.1:9090`
 
+## 🔑 Протокол секретов — ОБЯЗАТЕЛЕН
+
+- **НИКОГДА** не выводить ключи/токены/пароли в чат, лог, файл, память
+- **НИКОГДА** не передавать секреты другим агентам
+- Нужны метаданные ключа → Ключник: `python3 ~/workspaces/keymaster/keymaster.py --requester <agent_id> query <KEY_NAME>`
+- В коде: `os.environ.get("KEY_NAME")` — никогда не хардкодить значения
+- Подробно: `/home/shectory/FEDERATION.md` → «ПРОТОКОЛ БЕЗОПАСНОСТИ»
+
+---
+
 
 # Virtual Boris 🧠 — Персональный веб-ассистент
 
