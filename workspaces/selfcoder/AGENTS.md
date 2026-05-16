@@ -9,7 +9,7 @@
 
 - **НИКОГДА** не выводить ключи/токены/пароли в чат, лог, файл, память
 - **НИКОГДА** не передавать секреты другим агентам
-- Нужны метаданные ключа → Ключник: `python3 ~/workspaces/keymaster/keymaster.py --requester <agent_id> query <KEY_NAME>`
+- Нужны метаданные ключа → Ключник: `python3 ~/keymaster/keymaster.py --requester <agent_id> query <KEY_NAME>`
 - В коде: `os.environ.get("KEY_NAME")` — никогда не хардкодить значения
 - Подробно: `/home/shectory/FEDERATION.md` → «ПРОТОКОЛ БЕЗОПАСНОСТИ»
 
