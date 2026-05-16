@@ -12,15 +12,16 @@
   },
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "^4.0.0",
+    "jsdom": "^29.1.1",
     "svelte": "^5.0.0",
+    "svelte-check": "^4.0.0",
     "typescript": "^5.4.0",
     "vite": "^5.2.0",
-    "vitest": "^1.6.0",
-    "svelte-check": "^4.0.0"
+    "vitest": "^1.6.0"
   },
   "dependencies": {
+    "@monaco-editor/loader": "^1.4.0",
     "lightweight-charts": "^4.2.0",
-    "uplot": "^1.6.31",
-    "@monaco-editor/loader": "^1.4.0"
+    "uplot": "^1.6.31"
   }
 }
