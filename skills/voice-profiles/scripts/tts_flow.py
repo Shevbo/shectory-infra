@@ -38,6 +38,13 @@ def get_voice_config(persona):
         }
     return {"voiceName": "Charon", "model": "gemini-2.5-flash-preview-tts"}
 
+def get_persona_for_agent(agent_id: str) -> str:
+    cfg = load_cfg()
+    for a in cfg.get("agents", {}).get("list", []):
+        if a["id"] == agent_id:
+            return a.get("tts", {}).get("persona", agent_id)
+    return agent_id
+
 def generate_tts(text, voice_cfg, api_key, base_url):
     # Gemini TTS requires explicit instruction to only output audio, not text
     tts_prompt = f"Read the following text aloud in Russian. Output ONLY audio, no text:\n\n{text}"
@@ -93,6 +100,15 @@ if __name__ == "__main__":
         api_key = cfg["models"]["providers"]["google"]["apiKey"]
         base_url = cfg["models"]["providers"]["google"]["baseUrl"]
         vc = get_voice_config(sys.argv[2])
+        path = generate_tts(sys.argv[3], vc, api_key, base_url)
+        print(f"MEDIA:{path}[[audio_as_voice]]")
+        sys.exit(0)
+    if cmd == "generate-agent" and len(sys.argv) >= 4:
+        cfg = load_cfg()
+        api_key = cfg["models"]["providers"]["google"]["apiKey"]
+        base_url = cfg["models"]["providers"]["google"]["baseUrl"]
+        persona = get_persona_for_agent(sys.argv[2])
+        vc = get_voice_config(persona)
         path = generate_tts(sys.argv[3], vc, api_key, base_url)
         print(f"MEDIA:{path}[[audio_as_voice]]")
         sys.exit(0)
