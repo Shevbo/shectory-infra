@@ -1,12 +1,16 @@
 import { NextResponse } from "next/server";
 
 export async function POST() {
+  const secure = process.env.NODE_ENV === "production";
   const res = NextResponse.json({ ok: true });
-  res.cookies.set("shectory_portal_session", "", {
-    httpOnly: true, path: "/", maxAge: 0,
-  });
-  res.cookies.set("shectory_admin", "", {
-    httpOnly: true, path: "/", maxAge: 0,
-  });
+  const clearAttrs = [
+    "HttpOnly",
+    "SameSite=Lax",
+    "Max-Age=0",
+    "Path=/",
+    ...(secure ? ["Secure"] : []),
+  ];
+  res.headers.append("Set-Cookie", `shectory_portal_session=; ${clearAttrs.join("; ")}`);
+  res.headers.append("Set-Cookie", `shectory_admin=; ${clearAttrs.join("; ")}`);
   return res;
 }

@@ -41,7 +41,7 @@ export async function middleware(request: NextRequest) {
   }
 
   const secret = process.env.AUTH_SESSION_SECRET?.trim();
-  if (!secret) return NextResponse.next();
+  if (!secret) return NextResponse.redirect(new URL("/login", request.url));
 
   const token = request.cookies.get("shectory_portal_session")?.value;
   if (!token || !(await verifyToken(token, secret))) {

@@ -28,7 +28,7 @@ export function verifySessionToken(token: string, secret: string): string | null
   const email = parts.slice(0, -2).join(":");
   const payload = `${email}:${expires}`;
   if (!timingSafeEqualStr(sig, sign(payload, secret))) return null;
-  if (Math.floor(Date.now() / 1000) > parseInt(expires, 10)) return null;
+  if (Math.floor(Date.now() / 1000) >= parseInt(expires, 10)) return null;
   return email;
 }
 
