@@ -32,6 +32,12 @@ class TestVoiceToggle(unittest.TestCase):
         """Clean up temp file."""
         pass
 
+    @classmethod
+    def tearDownClass(cls):
+        """Clean up temp file after all tests."""
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
+
     def test_default_is_off(self):
         """Unknown agent defaults to 'off'."""
         state = voice_toggle.get_state('unknown_agent')

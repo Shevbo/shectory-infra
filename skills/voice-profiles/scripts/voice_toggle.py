@@ -22,6 +22,9 @@ CLI:
 import os
 import json
 import sys
+import fcntl
+import shutil
+import warnings
 from pathlib import Path
 
 
@@ -39,7 +42,12 @@ def _load_state():
     try:
         with open(state_file, 'r') as f:
             return json.load(f)
-    except (json.JSONDecodeError, IOError):
+    except json.JSONDecodeError:
+        bak = state_file + '.bak'
+        shutil.copy2(state_file, bak)
+        warnings.warn(f"Corrupted voice_state.json backed up to {bak}, treating as empty.")
+        return {}
+    except IOError:
         return {}
 
 
@@ -48,8 +56,11 @@ def _save_state(state):
     state_file = _get_state_file()
     Path(state_file).parent.mkdir(parents=True, exist_ok=True)
 
-    with open(state_file, 'w') as f:
+    tmp = state_file + '.tmp'
+    with open(tmp, 'w') as f:
+        fcntl.flock(f, fcntl.LOCK_EX)
         json.dump(state, f, indent=2)
+    os.replace(tmp, state_file)
 
 
 def get_state(agent_id: str) -> str:
