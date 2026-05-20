@@ -21,8 +21,6 @@ logger = structlog.get_logger(__name__)
 UPSTREAM_MAP: dict[str, str] = {
     "deepseek": "https://api.deepseek.com",
     "google": "https://gemini-proxy-worker.bshevelev75.workers.dev",
-    "anthropic": "https://api.anthropic.com",
-    "openai": "https://api.openai.com",
 }
 
 _READ_TIMEOUT = 30.0

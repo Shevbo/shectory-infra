@@ -151,9 +151,7 @@
   "reverse_proxy": {
     "upstreams": {
       "deepseek": "https://api.deepseek.com",
-      "google": "https://gemini-proxy-worker.bshevelev75.workers.dev",
-      "anthropic": "https://api.anthropic.com",
-      "openai": "https://api.openai.com"
+      "google": "https://gemini-proxy-worker.bshevelev75.workers.dev"
     }
   },
   "agents": {
@@ -263,10 +261,7 @@
       {
         "comment": "LLM APIs: direct from smain",
         "hosts": [
-          "api.deepseek.com",
-          "api.anthropic.com",
-          "api.openai.com",
-          "api.cohere.com"
+          "api.deepseek.com"
         ],
         "proxies": []
       },
