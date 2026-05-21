@@ -12,7 +12,7 @@ import sys, os, json, base64, subprocess, requests
 
 CONFIG = os.path.expanduser("~/.openclaw/openclaw.json")
 VOICES_DB = os.path.expanduser("~/.openclaw/voices.json")
-OUTPUT_DIR = os.path.expanduser("~/.openclaw/media/tts/")
+OUTPUT_DIR = os.path.expanduser("~/.openclaw/media/outbound/")
 
 def load_cfg():
     with open(CONFIG) as f:
@@ -35,8 +35,9 @@ def get_voice_config(persona):
         return {
             "voiceName": v.get("voiceName", role.get("voice", "Kore")),
             "model": v.get("model", "gemini-2.5-flash-preview-tts"),
+            "prompt": v.get("prompt", ""),
         }
-    return {"voiceName": "Charon", "model": "gemini-2.5-flash-preview-tts"}
+    return {"voiceName": "Charon", "model": "gemini-2.5-flash-preview-tts", "prompt": ""}
 
 def get_persona_for_agent(agent_id: str) -> str:
     cfg = load_cfg()
@@ -45,9 +46,19 @@ def get_persona_for_agent(agent_id: str) -> str:
             return a.get("tts", {}).get("persona", agent_id)
     return agent_id
 
+MAX_TTS_WORDS = 30
+
+
+def _truncate_words(text: str, max_words: int) -> str:
+    words = text.split()
+    if len(words) <= max_words:
+        return text
+    return " ".join(words[:max_words]) + "..."
+
+
 def generate_tts(text, voice_cfg, api_key, base_url):
-    # Gemini TTS requires explicit instruction to only output audio, not text
-    tts_prompt = f"Read the following text aloud in Russian. Output ONLY audio, no text:\n\n{text}"
+    short_text = _truncate_words(text, MAX_TTS_WORDS)
+    tts_prompt = f"Read the following text aloud in Russian. Output ONLY audio, no text:\n\n{short_text}"
     body = {
         "contents": [{"parts": [{"text": tts_prompt}]}],
         "generationConfig": {
@@ -59,6 +70,8 @@ def generate_tts(text, voice_cfg, api_key, base_url):
             }
         }
     }
+    if voice_cfg.get("prompt"):
+        body["systemInstruction"] = {"parts": [{"text": voice_cfg["prompt"]}]}
     url = f"{base_url}/models/{voice_cfg['model']}:generateContent"
     r = requests.post(url, json=body, params={"key": api_key}, timeout=30,
                       proxies={"https": None, "http": None})
@@ -118,7 +131,7 @@ if __name__ == "__main__":
         base_url = cfg["models"]["providers"]["google"]["baseUrl"]
         voice_name = sys.argv[2]
         text = sys.argv[3]
-        vc = {"voiceName": voice_name, "model": "gemini-2.5-flash-preview-tts"}
+        vc = {"voiceName": voice_name, "model": "gemini-2.5-flash-preview-tts", "prompt": ""}
         path = generate_tts(text, vc, api_key, base_url)
         print(f"MEDIA:{path}[[audio_as_voice]]")
         sys.exit(0)

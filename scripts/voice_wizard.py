@@ -94,24 +94,29 @@ def tg_call(account: str, method: str, data: dict) -> dict:
 def tg_send_audio(account: str, chat_id: str, audio_path: str, caption: str = "") -> dict:
     token = load_token(account)
     url = f"https://api.telegram.org/bot{token}/sendVoice"
-    import mimetypes
     boundary = "----FormBoundary" + str(int(time.time()))
+    CRLF = b"\r\n"
+
+    def field(name, value_bytes):
+        return (
+            f"--{boundary}\r\nContent-Disposition: form-data; name=\"{name}\"\r\n\r\n".encode()
+            + (value_bytes if isinstance(value_bytes, bytes) else value_bytes.encode("utf-8"))
+            + CRLF
+        )
+
     with open(audio_path, "rb") as f:
         audio_data = f.read()
-    body = (
-        f"--{boundary}\r\n"
-        f'Content-Disposition: form-data; name="chat_id"\r\n\r\n{chat_id}\r\n'
-        f"--{boundary}\r\n"
-        f'Content-Disposition: form-data; name="voice"; filename="voice.ogg"\r\n'
-        f"Content-Type: audio/ogg\r\n\r\n"
-    ).encode() + audio_data + (
-        f"\r\n--{boundary}--\r\n"
-    ).encode()
+
+    filename = os.path.basename(audio_path)
+    parts = [field("chat_id", str(chat_id))]
     if caption:
-        body = (
-            f"--{boundary}\r\n"
-            f'Content-Disposition: form-data; name="caption"\r\n\r\n{caption}\r\n'
-        ).encode() + body[len(f"--{boundary}\r\n".encode()):]
+        parts.append(field("caption", caption))
+    parts.append(
+        f"--{boundary}\r\nContent-Disposition: form-data; name=\"voice\"; filename=\"{filename}\"\r\nContent-Type: audio/ogg\r\n\r\n".encode()
+        + audio_data + CRLF
+    )
+    parts.append(f"--{boundary}--\r\n".encode())
+    body = b"".join(parts)
 
     proxy = urllib.request.ProxyHandler({"https": LINEMAN, "http": LINEMAN})
     opener = urllib.request.build_opener(proxy)
@@ -169,8 +174,14 @@ def save_agent_voice(agent_id: str, voice_name: str):
     roles = db.setdefault("roles", {})
     if agent_id not in roles:
         roles[agent_id] = {}
+    existing_voice_id = roles[agent_id].get("voiceId") or roles[agent_id].get("voice", "")
+    # If agent has a named profile in voices (e.g. "medsestra"), update voiceName there
+    # so the engineering prompt is preserved. Never overwrite voiceId with a raw voice name.
+    if existing_voice_id and existing_voice_id in db.get("voices", {}):
+        db["voices"][existing_voice_id]["voiceName"] = voice_name
+    else:
+        roles[agent_id]["voiceId"] = voice_name
     roles[agent_id]["voice"] = voice_name
-    roles[agent_id]["voiceId"] = voice_name
     save_voices_db(db)
 
 
@@ -283,10 +294,10 @@ def send_voices_keyboard(account: str, chat_id: str, agent_id: str):
 
 
 def do_tts_test(voice_name: str) -> str | None:
-    """Generate TTS for test phrase. Returns path to OGG file or None."""
+    """Generate TTS for test phrase using voice name directly. Returns OGG path or None."""
     try:
         result = subprocess.run(
-            ["python3", TTS_SCRIPT, "generate", voice_name, TEST_PHRASE],
+            ["python3", TTS_SCRIPT, "test-voice", voice_name, TEST_PHRASE],
             capture_output=True, text=True, timeout=30,
         )
         for line in result.stdout.splitlines():
