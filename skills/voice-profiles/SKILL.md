@@ -63,9 +63,10 @@ python3 ~/skills/voice-profiles/scripts/voice_toggle.py check <agent_id>
 ```bash
 python3 ~/skills/voice-profiles/scripts/tts_flow.py generate-agent <agent_id> "<текст ответа>"
 ```
-Выведи только MEDIA-строку:
+Скрипт выведет два маркера (включи их в ответ буквально):
 ```
-MEDIA:/home/shectory/.openclaw/media/tts/tts_<timestamp>.ogg[[audio_as_voice]]
+[[audio_as_voice]]
+MEDIA:/home/shectory/.openclaw/media/outbound/tts_<timestamp>.ogg
 ```
 
 3. Если exit code **1** (голос выключен) — отвечай обычным текстом.
@@ -96,7 +97,9 @@ python3 ~/skills/voice-profiles/scripts/voices.py set-prompt <id> "Новый с
 ```bash
 # Сгенерировать тестовый голос
 python3 ~/skills/voice-profiles/scripts/tts_flow.py generate <id> "Текст для озвучки"
-# Результат: MEDIA:...ogg[[audio_as_voice]] — отправь пользователю
+# Результат (два маркера, включи в ответ):
+# [[audio_as_voice]]
+# MEDIA:/path/to/file.ogg
 ```
 
 ## Хранилище
@@ -156,14 +159,20 @@ python3 ~/skills/voice-profiles/scripts/voices.py voices                      # 
 ## Генерация голоса (TTS)
 
 ```bash
-# Сгенерировать OGG аудиофайл, вывести MEDIA: для отправки
+# Сгенерировать OGG аудиофайл, вывести маркеры для отправки
 python3 ~/skills/voice-profiles/scripts/tts_flow.py generate <persona> <text>
-# Результат: MEDIA:/путь/к/файлу.ogg[[audio_as_voice]]
-# Отправь пользователю этот MEDIA результат
+# Результат (два маркера):
+# [[audio_as_voice]]
+# MEDIA:/путь/к/файлу.ogg
 ```
 
-После генерации отправь пользователю голосовое сообщение, используя:
-- `MEDIA:путь[[audio_as_voice]]` в тексте ответа
+После генерации включи оба маркера БУКВАЛЬНО в свой ответ:
+```
+[[audio_as_voice]]
+MEDIA:/home/shectory/.openclaw/media/outbound/tts_<timestamp>.ogg
+```
+
+**ВАЖНО**: `[[audio_as_voice]]` должен быть ПЕРЕД строкой `MEDIA:`, не после.
 
 ## Telegram кнопка "Голоса ролей"
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 TTS Flow v2 — генерация голоса через Gemini TTS через Lineman прокси.
-Вывод: MEDIA:путь_к_ogg[[audio_as_voice]]
+Вывод: [[audio_as_voice]]\nMEDIA:путь_к_ogg
 
 Использование:
   tts_flow.py generate <persona> <text>
@@ -114,7 +114,7 @@ if __name__ == "__main__":
         base_url = cfg["models"]["providers"]["google"]["baseUrl"]
         vc = get_voice_config(sys.argv[2])
         path = generate_tts(sys.argv[3], vc, api_key, base_url)
-        print(f"MEDIA:{path}[[audio_as_voice]]")
+        print(f"[[audio_as_voice]]\nMEDIA:{path}")
         sys.exit(0)
     if cmd == "generate-agent" and len(sys.argv) >= 4:
         cfg = load_cfg()
@@ -123,7 +123,7 @@ if __name__ == "__main__":
         persona = get_persona_for_agent(sys.argv[2])
         vc = get_voice_config(persona)
         path = generate_tts(sys.argv[3], vc, api_key, base_url)
-        print(f"MEDIA:{path}[[audio_as_voice]]")
+        print(f"[[audio_as_voice]]\nMEDIA:{path}")
         sys.exit(0)
     if cmd == "test-voice" and len(sys.argv) >= 4:
         cfg = load_cfg()
@@ -133,7 +133,7 @@ if __name__ == "__main__":
         text = sys.argv[3]
         vc = {"voiceName": voice_name, "model": "gemini-2.5-flash-preview-tts", "prompt": ""}
         path = generate_tts(text, vc, api_key, base_url)
-        print(f"MEDIA:{path}[[audio_as_voice]]")
+        print(f"[[audio_as_voice]]\nMEDIA:{path}")
         sys.exit(0)
     print("Неизвестная команда")
     sys.exit(1)

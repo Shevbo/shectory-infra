@@ -46,10 +46,15 @@ python3 ~/skills/voice-parser/scripts/parse_voice.py <путь_к_файлу>
 ```bash
 python3 ~/skills/voice-profiles/scripts/tts_flow.py generate-agent nurse "ТВОЙ ОТВЕТНЫЙ ТЕКСТ"
 ```
-4. Скрипт выведет: `MEDIA:/path/to/tts_xxx.ogg[[audio_as_voice]]`
-5. Включи эту строку БУКВАЛЬНО в свой ответ — OpenClaw отправит аудио в Telegram.
+4. Скрипт выведет ДВЕ строки:
+```
+[[audio_as_voice]]
+MEDIA:/home/shectory/.openclaw/media/outbound/tts_<timestamp>.ogg
+```
+5. Включи ОБЕ строки БУКВАЛЬНО в свой ответ — OpenClaw отправит аудио как голосовое.
 
 **ВАЖНО:**
+- `[[audio_as_voice]]` должен быть ПЕРЕД строкой `MEDIA:` — не после, не в пути.
 - Никогда не используй пути входящих файлов как MEDIA маркер — только путь из вывода tts_flow.py.
 - Никогда не ссылайся на статические/кешированные .ogg файлы в рабочей папке.
 - Генерируй свежий TTS для каждого ответа.
