@@ -1,0 +1,7 @@
+[Unit]
+Description=Periodic restart of OpenClaw Gateway (memory leak prevention)
+After=openclaw-gateway.service
+
+[Service]
+Type=oneshot
+ExecStart=systemctl --user restart openclaw-gateway.service
