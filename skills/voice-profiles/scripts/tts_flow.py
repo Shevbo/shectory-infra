@@ -34,10 +34,18 @@ def get_voice_config(persona):
         v = voices.get(vid, {})
         return {
             "voiceName": v.get("voiceName", role.get("voice", "Kore")),
-            "model": v.get("model", "gemini-2.5-flash-preview-tts"),
+            "model": v.get("model", "gemini-3.1-flash-tts-preview"),
             "prompt": v.get("prompt", ""),
         }
-    return {"voiceName": "Charon", "model": "gemini-2.5-flash-preview-tts", "prompt": ""}
+    # persona may be a voice ID directly (e.g. "medsestra")
+    voice = voices.get(persona)
+    if voice:
+        return {
+            "voiceName": voice.get("voiceName", "Kore"),
+            "model": voice.get("model", "gemini-3.1-flash-tts-preview"),
+            "prompt": voice.get("prompt", ""),
+        }
+    return {"voiceName": "Charon", "model": "gemini-3.1-flash-tts-preview", "prompt": ""}
 
 def get_persona_for_agent(agent_id: str) -> str:
     cfg = load_cfg()
@@ -58,9 +66,8 @@ def _truncate_words(text: str, max_words: int) -> str:
 
 def generate_tts(text, voice_cfg, api_key, base_url):
     short_text = _truncate_words(text, MAX_TTS_WORDS)
-    tts_prompt = f"Read the following text aloud in Russian. Output ONLY audio, no text:\n\n{short_text}"
     body = {
-        "contents": [{"parts": [{"text": tts_prompt}]}],
+        "contents": [{"parts": [{"text": short_text}]}],
         "generationConfig": {
             "responseModalities": ["AUDIO"],
             "speechConfig": {
@@ -70,8 +77,6 @@ def generate_tts(text, voice_cfg, api_key, base_url):
             }
         }
     }
-    if voice_cfg.get("prompt"):
-        body["systemInstruction"] = {"parts": [{"text": voice_cfg["prompt"]}]}
     url = f"{base_url}/models/{voice_cfg['model']}:generateContent"
     r = requests.post(url, json=body, params={"key": api_key}, timeout=30,
                       proxies={"https": None, "http": None})
@@ -131,7 +136,7 @@ if __name__ == "__main__":
         base_url = cfg["models"]["providers"]["google"]["baseUrl"]
         voice_name = sys.argv[2]
         text = sys.argv[3]
-        vc = {"voiceName": voice_name, "model": "gemini-2.5-flash-preview-tts", "prompt": ""}
+        vc = {"voiceName": voice_name, "model": "gemini-3.1-flash-tts-preview", "prompt": ""}
         path = generate_tts(text, vc, api_key, base_url)
         print(f"[[audio_as_voice]]\nMEDIA:{path}")
         sys.exit(0)
