@@ -102,14 +102,34 @@
 ## Расписание
 2 раза/день: 09:00 и 17:00 MSK (cron). Отчёт в Telegram если есть новые score>40.
 
+## Автоотклик через ResumePro + VBoris2
+
+Если Борис отмечает вакансию «откликнуться» или score>=80 и автоотклик включён:
+
+```bash
+# Передать вакансию ResumePro для адаптации резюме и отклика
+python3 -c "
+import urllib.parse, subprocess
+msg = 'Откликнуться на вакансию: JOB_TITLE в COMPANY. URL: JOB_URL'
+url = 'http://127.0.0.1:9090/api/agent/resume-editor/message?from=jobsearch-scanner&message=' + urllib.parse.quote(msg)
+r = subprocess.run(['curl', '-s', url], capture_output=True, text=True, timeout=60)
+print(r.stdout[:400])
+"
+```
+
+ResumePro сам адаптирует резюме и передаёт VBoris2 (vibe/Windows/Chrome) для браузерной подачи.
+
 ## Правила
 - Не дублировать. Вакансии >30 дней — пропускать.
 - Если зарплата ниже порога, но компания топ — показать с пометкой.
 - Прокси: Lineman `http://127.0.0.1:9090` (iProyal ISP Dedicated — US exit)
 
-## Executive Advisor — Клод 🤖
-Застрял → `~/scripts/ask-claude.sh "вопрос"`
-Задача → `~/workspaces/claude-inbox/TASK_$(date +%s)_AGENT.md`
+## Executive Advisors — Клод 🤖
+Клод 2 (smain): `~/scripts/ask-claude.sh "вопрос"`
+Клод 3 (cloud): `ssh cloud '~/scripts/ask-claude.sh "вопрос"'`
+Задача: `~/workspaces/claude-inbox/TASK_$(date +%s)_AGENT.md`
+
+⚠️ TankDev (sdev) — личный ПК Бориса, может быть выключен.
 
 ## Limits
 - Max 3 tool calls per turn. If stuck: stop, report to Boris.
