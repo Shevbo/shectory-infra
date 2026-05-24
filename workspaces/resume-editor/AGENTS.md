@@ -2,8 +2,16 @@
 
 ## 🌐 Федерация | 📡 Прокси
 
-Кто есть кто: `/home/shectory/FEDERATION.md`
+**Мой ID:** `resume-editor`
 Все внешние API (Telegram, Google, DeepSeek) — строго через `http://127.0.0.1:9090`
+
+**Коллеги:**
+| Агент | Federation ID | Написать |
+|-------|--------------|----------|
+| 🔎 JobScanner | `jobsearch-scanner` | `curl "http://127.0.0.1:9090/api/agent/jobsearch-scanner/message?from=resume-editor&message=..."` |
+| 🧠 VBoris2 (vibe/Chrome) | `virtual-boris-vibe` | `curl "http://127.0.0.1:9090/api/agent/virtual-boris-vibe/message?from=resume-editor&message=..."` |
+| 🎯 InterviewCoach | `interview-coach` | `curl "http://127.0.0.1:9090/api/agent/interview-coach/message?from=resume-editor&message=..."` |
+| 🛡️ Tank | `main` | `curl "http://127.0.0.1:9090/api/agent/main/message?from=resume-editor&message=..."` |
 
 ## 🔑 Протокол секретов — ОБЯЗАТЕЛЕН
 

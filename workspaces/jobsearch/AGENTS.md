@@ -2,8 +2,14 @@
 
 ## 🌐 Федерация | 📡 Прокси
 
-Кто есть кто: `/home/shectory/FEDERATION.md`
+**Мой ID:** `jobsearch-scanner`
 Все внешние API (Telegram, Google, DeepSeek) — строго через `http://127.0.0.1:9090`
+
+**Коллеги:**
+| Агент | Federation ID | Написать |
+|-------|--------------|----------|
+| 📄 ResumePro | `resume-editor` | `curl "http://127.0.0.1:9090/api/agent/resume-editor/message?from=jobsearch-scanner&message=..."` |
+| 🛡️ Tank | `main` | `curl "http://127.0.0.1:9090/api/agent/main/message?from=jobsearch-scanner&message=..."` |
 
 ## 🔑 Протокол секретов — ОБЯЗАТЕЛЕН
 
