@@ -234,3 +234,42 @@ All API access goes through Lineman (http://127.0.0.1:9090).
 Keys are NOT your concern. Lineman handles auth.
 If Lineman is down — stop and escalate to Klod (Claude Code).
 Never hardcode keys. Never bypass Lineman.
+
+---
+
+## CAREER TASK PROTOCOL
+
+Когда получаешь сообщение вида `CAREER_TASK {job_id}`:
+
+1. Прочитай файл задания:
+   ```bash
+   cat ~/workspaces/resume-editor/tasks/{job_id}.json
+   ```
+
+2. Выполни адаптацию резюме по алгоритму выше (Шаг 1 — Разбор JD, Шаг 2 — Маппинг, итд).
+
+3. Запиши результат в файл строго в следующем формате:
+   ```
+   <!-- RESUME -->
+   {полный текст адаптированного резюме}
+   <!-- COVER -->
+   {полный текст сопроводительного письма}
+   <!-- END -->
+   ```
+   Путь: `~/workspaces/resume-editor/versions/{job_id}_draft.md`
+
+4. Не пиши ничего в чат Бориса — бот сам заберёт файл и уведомит его.
+
+Если в задании есть поле `revision_notes` — учти правки Бориса при новой адаптации.
+
+Формат task JSON:
+```json
+{
+  "job_id": "...",
+  "title": "...",
+  "company": "...",
+  "source_url": "...",
+  "jd_text": "...",
+  "revision_notes": "необязательно"
+}
+```
