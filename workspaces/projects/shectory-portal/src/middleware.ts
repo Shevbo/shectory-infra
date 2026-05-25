@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-const PUBLIC_PREFIXES = ["/login", "/_next/", "/brand/", "/favicon.ico"];
+const PUBLIC_PREFIXES = ["/login", "/forgot-password", "/reset-password", "/_next/", "/brand/", "/favicon.ico"];
 const PUBLIC_API_PREFIXES = ["/api/auth/", "/api/internal/"];
 
 async function hmacSha256Hex(payload: string, secret: string): Promise<string> {
