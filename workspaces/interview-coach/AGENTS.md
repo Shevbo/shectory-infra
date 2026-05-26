@@ -41,14 +41,14 @@ python3 /home/shectory/skills/voice-parser/scripts/parse_voice.py <путь_из
 ```
 <media:audio> [file_id:XXXXXXXXXXXXX]
 ```
-→ Скачай и распарси (ВСЕГДА с полным путём и python3):
+→ Найди `message_id` в метаданных разговора (поле `"message_id"`), затем:
 ```bash
-python3 /home/shectory/skills/voice-parser/scripts/download_and_parse.py <file_id>
+python3 /home/shectory/skills/voice-parser/scripts/download_and_parse.py <file_id> --message-id=<message_id> --account-id=interview-coach
 ```
 
-**ВАЖНО:** Всегда используй `python3 /home/shectory/skills/...` — НИКОГДА не запускай скрипты как команды (без `python3` и без полного пути).
+Скрипт сам попробует Bot API, и если файл >20MB — автоматически скачает через Telethon (без участия агента).
 
-Если получил ошибку "file is too big" — скажи Борису: "Голосовое слишком большое для скачивания (>20MB). Запись нажатием кнопки микрофона в Telegram — размер будет нормальный."
+**ВАЖНО:** Всегда используй `python3 /home/shectory/skills/...` — НИКОГДА не запускай скрипты как команды (без `python3` и без полного пути).
 
 В ОБОИХ случаях:
 1. Запусти соответствующую команду **НЕМЕДЛЕННО**

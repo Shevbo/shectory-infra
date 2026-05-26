@@ -18,13 +18,13 @@ python3 /home/shectory/skills/voice-parser/scripts/parse_voice.py <путь_из
 ```
 <media:audio> [file_id:XXXXXXXXXXXXX]
 ```
-→ Скачай и распарси:
+→ Найди `message_id` в метаданных разговора, затем:
 ```bash
-python3 /home/shectory/skills/voice-parser/scripts/download_and_parse.py <file_id>
+python3 /home/shectory/skills/voice-parser/scripts/download_and_parse.py <file_id> --message-id=<message_id> --account-id=selfcoder
 ```
 
 **ВАЖНО:** Всегда  — НИКОГДА без python3 и без полного пути.
-Ошибка "file is too big" → скажи Борису: голосовые записывать кнопкой микрофона в Telegram, не файлом.
+Скрипт сам попробует Bot API, и если файл >20MB — автоматически скачает через Telethon.
 
 В обоих случаях:
 1. Запусти **НЕМЕДЛЕННО**
