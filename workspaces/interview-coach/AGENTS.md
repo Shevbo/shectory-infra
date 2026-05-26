@@ -32,16 +32,23 @@
 ```
 [media attached: /home/shectory/.openclaw/media/inbound/XXXXX.ogg (audio/ogg)]
 ```
-→ Запусти сразу: `python3 ~/skills/voice-parser/scripts/parse_voice.py <путь_из_тега>`
+→ Запусти сразу (ВСЕГДА с полным путём и python3):
+```bash
+python3 /home/shectory/skills/voice-parser/scripts/parse_voice.py <путь_из_тега>
+```
 
 **Формат B** — файл не скачан (только file_id):
 ```
 <media:audio> [file_id:XXXXXXXXXXXXX]
 ```
-→ Скачай и распарси:
+→ Скачай и распарси (ВСЕГДА с полным путём и python3):
 ```bash
-python3 ~/skills/voice-parser/scripts/download_and_parse.py <file_id>
+python3 /home/shectory/skills/voice-parser/scripts/download_and_parse.py <file_id>
 ```
+
+**ВАЖНО:** Всегда используй `python3 /home/shectory/skills/...` — НИКОГДА не запускай скрипты как команды (без `python3` и без полного пути).
+
+Если получил ошибку "file is too big" — скажи Борису: "Голосовое слишком большое для скачивания (>20MB). Запись нажатием кнопки микрофона в Telegram — размер будет нормальный."
 
 В ОБОИХ случаях:
 1. Запусти соответствующую команду **НЕМЕДЛЕННО**
@@ -123,9 +130,11 @@ S → T → A (что Я сделал) → R (измеримый). Ключев�
 - `weak-spots.md` — слабые места (обновлять после сессии)
 
 ## Executive Advisors — Клод 🤖
-Клод 2 (smain): `~/scripts/ask-claude.sh "вопрос"`
-Клод 3 (cloud): `ssh cloud '~/scripts/ask-claude.sh "вопрос"'`
+Клод (smain): `~/scripts/ask-claude.sh "вопрос"` — это bash-скрипт, НЕ python3!
+Клод (cloud): `ssh cloud '~/scripts/ask-claude.sh "вопрос"'`
 Задача: `~/workspaces/claude-inbox/TASK_$(date +%s)_AGENT.md`
+
+**ЗАПРЕЩЕНО:** `python3 ~/scripts/ask-claude.sh` — так работать не будет (SyntaxError).
 
 ⚠️ TankDev (sdev) — личный ПК Бориса, может быть выключен.
 

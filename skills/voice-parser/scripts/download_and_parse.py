@@ -10,6 +10,9 @@ Downloads to ~/.openclaw/media/inbound/, then calls parse_voice.py.
 
 import sys, os, json, requests
 from pathlib import Path
+
+# Ensure parse_voice is importable regardless of working directory
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from parse_voice import parse_audio
 
 CONFIG_PATH = os.path.expanduser("~/.openclaw/openclaw.json")
@@ -74,7 +77,11 @@ def main():
         local_path = download_voice(file_id, token)
         print(f"✅ Saved: {local_path}")
     except Exception as e:
-        print(f"❌ Download failed: {e}")
+        err_str = str(e)
+        if "file is too big" in err_str:
+            print(f"❌ Файл слишком большой для Bot API (лимит 20MB). Скажи Борису: голосовое нужно записывать через кнопку микрофона в Telegram, не прикреплять файлом.")
+        else:
+            print(f"❌ Download failed: {e}")
         sys.exit(1)
 
     result = parse_audio(str(local_path), prompt)
