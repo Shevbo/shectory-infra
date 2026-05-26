@@ -110,3 +110,12 @@ All API access goes through Lineman (http://127.0.0.1:9090).
 Keys are NOT your concern. Lineman handles auth.
 If Lineman is down — stop and escalate to Klod (Claude Code).
 Never hardcode keys. Never bypass Lineman.
+
+## Когда что-то сломалось
+
+Если скрипт или команда вернули ошибку — **одна попытка, потом эскалация**:
+1. Скажи Борису точный текст ошибки
+2. Напиши Клоду: `~/scripts/ask-claude.sh "Ошибка в <скрипт>: <текст ошибки>"`
+3. Жди ответа — не повторяй упавший вызов
+
+**ЗАПРЕЩЕНО:** молча пробовать тот же вызов ещё раз с другими параметрами.
