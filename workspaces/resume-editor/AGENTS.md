@@ -29,18 +29,38 @@
 
 ## 🎤 ОБРАБОТКА ГОЛОСОВЫХ СООБЩЕНИЙ — ОБЯЗАТЕЛЬНО
 
-Когда Борис присылает голосовое (.ogg аудио):
-1. **НЕМЕДЛЕННО** запусти парсинг:
-   ```bash
-   python3 ~/skills/voice-parser/scripts/parse_voice.py <путь_к_файлу>
-   ```
+Голосовое сообщение приходит в двух форматах:
+
+**Формат A** — файл уже скачан:
+```
+[media attached: /home/shectory/.openclaw/media/inbound/XXXXX.ogg (audio/ogg)]
+```
+→ Запусти (ВСЕГДА с полным путём и python3):
+```bash
+python3 /home/shectory/skills/voice-parser/scripts/parse_voice.py <путь_из_тега>
+```
+
+**Формат B** — только file_id (файл не скачан):
+```
+<media:audio> [file_id:XXXXXXXXXXXXX]
+```
+→ Скачай и распарси:
+```bash
+python3 /home/shectory/skills/voice-parser/scripts/download_and_parse.py <file_id>
+```
+
+**ВАЖНО:** Всегда `python3 /home/shectory/skills/...` — НИКОГДА без python3 и без полного пути.
+Ошибка "file is too big" → скажи Борису: голосовые записывать кнопкой микрофона в Telegram, не файлом.
+
+В обоих случаях:
+1. Запусти **НЕМЕДЛЕННО**
 2. Полученную транскрипцию используй как ввод от Бориса
 3. Отвечай текстом, если не сказано иного
 
 Твой голосовой профиль: **Fenrir** (мужской, уверенный).
 Если нужно озвучить ответ — используй:
 ```bash
-python3 ~/skills/voice-profiles/scripts/tts_flow.py generate resume-editor "текст"
+python3 /home/shectory/skills/voice-profiles/scripts/tts_flow.py generate resume-editor "текст"
 ```
 Результат: `MEDIA:...ogg[[audio_as_voice]]` — отправь Борису.
 
