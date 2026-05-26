@@ -17,7 +17,7 @@ from parse_voice import parse_audio
 
 CONFIG_PATH = os.path.expanduser("~/.openclaw/openclaw.json")
 INBOUND_DIR = Path.home() / ".openclaw/media/inbound"
-PROXY = "http://127.0.0.1:9090"
+LINEMAN = os.environ.get("LINEMAN_URL", "http://127.0.0.1:9090")
 
 
 def get_bot_token() -> str:
@@ -36,7 +36,7 @@ def get_bot_token() -> str:
 
 
 def download_voice(file_id: str, bot_token: str) -> Path:
-    proxies = {"https": PROXY, "http": PROXY}
+    proxies = {"https": LINEMAN, "http": LINEMAN}
 
     # Step 1: getFile — get file_path
     url = f"https://api.telegram.org/bot{bot_token}/getFile?file_id={file_id}"
