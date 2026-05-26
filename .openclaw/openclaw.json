@@ -1,0 +1,1200 @@
+{
+  "meta": {
+    "lastTouchedVersion": "2026.5.18",
+    "lastTouchedAt": "2026-05-20T11:45:18.562Z"
+  },
+  "wizard": {
+    "lastRunAt": "2026-05-20T11:45:18.485Z",
+    "lastRunVersion": "2026.5.18",
+    "lastRunCommand": "doctor",
+    "lastRunMode": "local"
+  },
+  "browser": {
+    "enabled": true,
+    "profiles": {
+      "openclaw": {
+        "cdpUrl": "http://127.0.0.1:16222",
+        "driver": "existing-session",
+        "color": "#FF4500"
+      }
+    }
+  },
+  "models": {
+    "mode": "merge",
+    "providers": {
+      "deepseek": {
+        "baseUrl": "http://127.0.0.1:9090/proxy/deepseek",
+        "api": "openai-completions",
+        "models": [
+          {
+            "id": "deepseek-v4-flash",
+            "name": "DeepSeek V4 Flash",
+            "api": "openai-completions",
+            "reasoning": true,
+            "input": [
+              "text"
+            ],
+            "cost": {
+              "input": 0.14,
+              "output": 0.28,
+              "cacheRead": 0.0028,
+              "cacheWrite": 0
+            },
+            "contextWindow": 1000000,
+            "maxTokens": 384000,
+            "compat": {
+              "supportsReasoningEffort": true,
+              "supportsUsageInStreaming": true,
+              "maxTokensField": "max_tokens"
+            }
+          },
+          {
+            "id": "deepseek-v4-pro",
+            "name": "DeepSeek V4 Pro",
+            "api": "openai-completions",
+            "reasoning": true,
+            "input": [
+              "text"
+            ],
+            "cost": {
+              "input": 0.435,
+              "output": 0.87,
+              "cacheRead": 0.0036,
+              "cacheWrite": 0
+            },
+            "contextWindow": 1000000,
+            "maxTokens": 128000,
+            "compat": {
+              "supportsReasoningEffort": true,
+              "supportsUsageInStreaming": true,
+              "maxTokensField": "max_tokens"
+            }
+          }
+        ]
+      },
+      "google": {
+        "baseUrl": "http://127.0.0.1:9090/proxy/google/v1beta",
+        "apiKey": "AIzaSyBHxCxnYa-ZA4hyNEgI60DOtMIDIalM1Tg",
+        "api": "google-generative-ai",
+        "models": [
+          {
+            "id": "gemini-2.5-flash",
+            "name": "Gemini 2.5 Flash",
+            "reasoning": true,
+            "input": [
+              "text",
+              "audio",
+              "image"
+            ],
+            "cost": {
+              "input": 0.15,
+              "output": 0.6,
+              "cacheRead": 0,
+              "cacheWrite": 0
+            },
+            "contextWindow": 1000000,
+            "maxTokens": 65536,
+            "compat": {
+              "supportsReasoningEffort": false,
+              "supportsUsageInStreaming": true
+            },
+            "api": "google-generative-ai"
+          },
+          {
+            "id": "gemini-2.5-pro-preview-tts",
+            "name": "Gemini 2.5 Pro TTS",
+            "reasoning": false,
+            "input": [
+              "text"
+            ],
+            "cost": {
+              "input": 0,
+              "output": 0.016,
+              "cacheRead": 0,
+              "cacheWrite": 0
+            },
+            "contextWindow": 32768,
+            "maxTokens": 8192,
+            "compat": {
+              "supportsUsageInStreaming": false
+            },
+            "api": "google-generative-ai"
+          },
+          {
+            "id": "gemini-2.5-flash-preview-tts",
+            "name": "Gemini 2.5 Flash TTS",
+            "reasoning": false,
+            "input": [
+              "text"
+            ],
+            "cost": {
+              "input": 0,
+              "output": 0.004,
+              "cacheRead": 0,
+              "cacheWrite": 0
+            },
+            "contextWindow": 32768,
+            "maxTokens": 8192,
+            "compat": {
+              "supportsUsageInStreaming": false
+            },
+            "api": "google-generative-ai"
+          },
+          {
+            "id": "gemini-3.1-flash-tts-preview",
+            "name": "Gemini 3.1 Flash TTS",
+            "reasoning": false,
+            "input": [
+              "text"
+            ],
+            "cost": {
+              "input": 0,
+              "output": 0.004,
+              "cacheRead": 0,
+              "cacheWrite": 0
+            },
+            "contextWindow": 32768,
+            "maxTokens": 8192,
+            "compat": {
+              "supportsUsageInStreaming": false
+            },
+            "api": "google-generative-ai"
+          },
+          {
+            "id": "gemini-2.5-flash-native-audio-latest",
+            "name": "Gemini 2.5 Flash Native Audio",
+            "reasoning": false,
+            "input": [
+              "text",
+              "audio"
+            ],
+            "cost": {
+              "input": 0,
+              "output": 0.004,
+              "cacheRead": 0,
+              "cacheWrite": 0
+            },
+            "contextWindow": 1048576,
+            "maxTokens": 8192,
+            "compat": {
+              "supportsUsageInStreaming": false
+            },
+            "api": "google-generative-ai"
+          },
+          {
+            "id": "gemini-2.5-pro",
+            "name": "Gemini 2.5 Pro",
+            "reasoning": true,
+            "input": [
+              "text",
+              "audio",
+              "image"
+            ],
+            "cost": {
+              "input": 1.25,
+              "output": 10,
+              "cacheRead": 0,
+              "cacheWrite": 0
+            },
+            "contextWindow": 2000000,
+            "maxTokens": 65536,
+            "compat": {
+              "supportsReasoningEffort": false,
+              "supportsUsageInStreaming": true
+            },
+            "api": "google-generative-ai"
+          },
+          {
+            "id": "gemini-3.1-pro-preview",
+            "name": "Gemini 3.1 Pro Preview",
+            "reasoning": true,
+            "input": [
+              "text",
+              "audio",
+              "image"
+            ],
+            "cost": {
+              "input": 2,
+              "output": 12,
+              "cacheRead": 0,
+              "cacheWrite": 0
+            },
+            "contextWindow": 1000000,
+            "maxTokens": 65536,
+            "compat": {
+              "supportsReasoningEffort": false,
+              "supportsUsageInStreaming": true
+            },
+            "api": "google-generative-ai"
+          }
+        ]
+      },
+      "ollama": {
+        "baseUrl": "http://127.0.0.1:11434",
+        "apiKey": "OLLAMA_API_KEY",
+        "api": "ollama",
+        "models": [
+          {
+            "id": "llama3.1:8b",
+            "name": "llama3.1:8b",
+            "reasoning": false,
+            "input": [
+              "text"
+            ],
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0
+            },
+            "contextWindow": 131072,
+            "maxTokens": 8192,
+            "compat": {
+              "supportsUsageInStreaming": true,
+              "supportsTools": true
+            },
+            "api": "ollama",
+            "params": {
+              "num_ctx": 131072
+            }
+          },
+          {
+            "id": "llama3.2-vision:11b",
+            "name": "llama3.2-vision:11b",
+            "reasoning": false,
+            "input": [
+              "text",
+              "image"
+            ],
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0
+            },
+            "contextWindow": 131072,
+            "maxTokens": 8192,
+            "compat": {
+              "supportsUsageInStreaming": true,
+              "supportsTools": false
+            },
+            "api": "ollama",
+            "params": {
+              "num_ctx": 131072
+            }
+          }
+        ]
+      },
+      "lm-studio": {
+        "baseUrl": "http://127.0.0.1:9090/proxy/lm-studio",
+        "api": "openai-completions",
+        "models": [
+          {
+            "id": "google/gemma-4-e4b",
+            "name": "Gemma 4 E4B (LM Studio, local)",
+            "reasoning": false,
+            "input": [
+              "text"
+            ],
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0
+            },
+            "contextWindow": 8192,
+            "maxTokens": 4096,
+            "compat": {
+              "supportsUsageInStreaming": true,
+              "supportsTools": true
+            }
+          },
+          {
+            "id": "gemma-4-26b-a4b-it-imatrix",
+            "name": "Gemma 4 26B (LM Studio, local)",
+            "reasoning": false,
+            "input": [
+              "text"
+            ],
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0
+            },
+            "contextWindow": 8192,
+            "maxTokens": 4096,
+            "compat": {
+              "supportsUsageInStreaming": true,
+              "supportsTools": true
+            }
+          },
+          {
+            "id": "deepseek-r1-distill-qwen-14b",
+            "name": "DeepSeek R1 14B (LM Studio, local)",
+            "reasoning": true,
+            "input": [
+              "text"
+            ],
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0
+            },
+            "contextWindow": 8192,
+            "maxTokens": 4096,
+            "compat": {
+              "supportsUsageInStreaming": true,
+              "supportsTools": false
+            }
+          }
+        ]
+      },
+      "ollama-hoster": {
+        "baseUrl": "http://127.0.0.1:9090/proxy/ollama-hoster/v1",
+        "api": "openai-completions",
+        "models": [
+          {
+            "id": "llama3.2:3b",
+            "name": "Llama 3.2 3B (hoster, CPU)",
+            "contextWindow": 8192,
+            "maxTokens": 2048,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0
+            }
+          }
+        ]
+      }
+    }
+  },
+  "agents": {
+    "defaults": {
+      "model": {
+        "primary": "deepseek/deepseek-v4-flash",
+        "fallbacks": [
+          "google/gemini-2.5-flash"
+        ]
+      },
+      "workspace": "/home/shectory",
+      "timeoutSeconds": 300,
+      "maxConcurrent": 4,
+      "subagents": {
+        "maxConcurrent": 8,
+        "archiveAfterMinutes": 60
+      }
+    },
+    "list": [
+      {
+        "id": "main",
+        "default": true,
+        "name": "Tank",
+        "workspace": "/home/shectory",
+        "model": {
+          "primary": "deepseek/deepseek-v4-flash",
+          "fallbacks": [
+            "google/gemini-2.5-flash"
+          ]
+        },
+        "skills": [
+          "voice-profiles",
+          "github-repo",
+          "gog",
+          "image-gen",
+          "meeting",
+          "voice-parser",
+          "self-improving-agent",
+          "task-orchestra"
+        ],
+        "tts": {
+          "auto": "off",
+          "persona": "tank"
+        },
+        "identity": {
+          "name": "Tank",
+          "emoji": "🛠️"
+        },
+        "subagents": {
+          "allowAgents": [
+            "*"
+          ]
+        },
+        "tools": {
+          "alsoAllow": [
+            "browser",
+            "exec"
+          ]
+        }
+      },
+      {
+        "id": "selfcoder",
+        "name": "Selfcoder",
+        "workspace": "/home/shectory/workspaces/selfcoder",
+        "model": {
+          "primary": "deepseek/deepseek-v4-flash",
+          "fallbacks": [
+            "google/gemini-2.5-flash"
+          ]
+        },
+        "skills": [
+          "voice-parser",
+          "voice-profiles",
+          "self-improving-agent",
+          "task-orchestra"
+        ],
+        "tts": {
+          "auto": "off",
+          "persona": "developer"
+        },
+        "identity": {
+          "name": "Selfcoder",
+          "emoji": "⚡"
+        }
+      },
+      {
+        "id": "qaper",
+        "name": "QAper",
+        "workspace": "/home/shectory/workspaces/qaper",
+        "model": {
+          "primary": "deepseek/deepseek-v4-flash",
+          "fallbacks": [
+            "google/gemini-2.5-flash"
+          ]
+        },
+        "skills": [
+          "voice-parser",
+          "voice-profiles",
+          "self-improving-agent",
+          "task-orchestra"
+        ],
+        "tts": {
+          "auto": "off",
+          "persona": "developer"
+        },
+        "identity": {
+          "name": "QAper",
+          "emoji": "🔍"
+        }
+      },
+      {
+        "id": "virtual-boris",
+        "name": "Virtual Boris",
+        "workspace": "/home/shectory/workspaces/virtual-boris",
+        "model": {
+          "primary": "deepseek/deepseek-v4-flash",
+          "fallbacks": [
+            "google/gemini-2.5-flash"
+          ]
+        },
+        "skills": [
+          "voice-profiles",
+          "github-repo",
+          "browser-automation",
+          "voice-parser",
+          "self-improving-agent",
+          "task-orchestra"
+        ],
+        "tts": {
+          "auto": "off",
+          "persona": "tank"
+        },
+        "identity": {
+          "name": "Virtual Boris",
+          "emoji": "🧠"
+        },
+        "tools": {
+          "alsoAllow": [
+            "browser"
+          ]
+        }
+      },
+      {
+        "id": "jobsearch-scanner",
+        "name": "JobScanner",
+        "workspace": "/home/shectory/workspaces/jobsearch",
+        "model": {
+          "primary": "deepseek/deepseek-v4-flash",
+          "fallbacks": [
+            "google/gemini-2.5-flash"
+          ]
+        },
+        "skills": [
+          "voice-parser",
+          "voice-profiles",
+          "self-improving-agent",
+          "task-orchestra"
+        ],
+        "tts": {
+          "auto": "off",
+          "persona": "jobsearch"
+        },
+        "identity": {
+          "name": "JobScanner",
+          "emoji": "🔎"
+        },
+        "tools": {
+          "alsoAllow": [
+            "web_search",
+            "web_fetch"
+          ]
+        }
+      },
+      {
+        "id": "resume-editor",
+        "name": "ResumePro",
+        "workspace": "/home/shectory/workspaces/resume-editor",
+        "model": {
+          "primary": "deepseek/deepseek-v4-flash",
+          "fallbacks": [
+            "google/gemini-2.5-flash"
+          ]
+        },
+        "skills": [
+          "voice-parser",
+          "voice-profiles",
+          "submit-resume",
+          "self-improving-agent",
+          "task-orchestra"
+        ],
+        "tts": {
+          "auto": "off",
+          "persona": "resume-editor"
+        },
+        "identity": {
+          "name": "ResumePro",
+          "emoji": "📄"
+        },
+        "tools": {
+          "alsoAllow": [
+            "browser",
+            "web_search",
+            "web_fetch",
+            "sessions_spawn",
+            "sessions_send"
+          ]
+        }
+      },
+      {
+        "id": "interview-coach",
+        "name": "InterviewCoach",
+        "workspace": "/home/shectory/workspaces/interview-coach",
+        "model": {
+          "primary": "google/gemini-2.5-flash",
+          "fallbacks": [
+            "deepseek/deepseek-v4-flash"
+          ]
+        },
+        "skills": [
+          "voice-parser",
+          "voice-profiles",
+          "self-improving-agent",
+          "task-orchestra"
+        ],
+        "tts": {
+          "auto": "off",
+          "persona": "interview-coach"
+        },
+        "identity": {
+          "name": "InterviewCoach",
+          "emoji": "🎯"
+        }
+      },
+      {
+        "id": "nurse",
+        "name": "Медсестра",
+        "workspace": "/home/shectory/workspaces/nurse",
+        "model": {
+          "primary": "deepseek/deepseek-v4-flash",
+          "fallbacks": [
+            "google/gemini-2.5-flash"
+          ]
+        },
+        "skills": [
+          "voice-profiles",
+          "voice-parser",
+          "self-improving-agent",
+          "task-orchestra"
+        ],
+        "tts": {
+          "auto": "off",
+          "persona": "medsestra"
+        },
+        "identity": {
+          "name": "Медсестра",
+          "emoji": "🩺"
+        },
+        "tools": {
+          "alsoAllow": [
+            "exec"
+          ]
+        }
+      },
+      {
+        "id": "guilya",
+        "name": "GUIlya",
+        "workspace": "/home/shectory/workspaces/guilya",
+        "model": {
+          "primary": "deepseek/deepseek-v4-flash",
+          "fallbacks": [
+            "google/gemini-2.5-flash"
+          ]
+        },
+        "skills": [
+          "gog",
+          "image-gen",
+          "voice-parser",
+          "voice-profiles",
+          "self-improving-agent",
+          "task-orchestra"
+        ],
+        "tts": {
+          "auto": "off",
+          "persona": "developer"
+        },
+        "identity": {
+          "name": "GUIlya",
+          "emoji": "🎨"
+        }
+      },
+      {
+        "id": "titan",
+        "name": "titan",
+        "workspace": "/home/shectory/workspaces/titan",
+        "agentDir": "/home/shectory/.openclaw/agents/titan/agent",
+        "model": {
+          "primary": "deepseek/deepseek-v4-flash",
+          "fallbacks": [
+            "google/gemini-2.5-flash"
+          ]
+        },
+        "skills": [
+          "voice-parser",
+          "voice-profiles",
+          "self-improving-agent",
+          "task-orchestra"
+        ],
+        "tts": {
+          "auto": "off",
+          "persona": "titan"
+        },
+        "identity": {
+          "name": "Titan",
+          "emoji": "🏋️"
+        }
+      },
+      {
+        "id": "inbox",
+        "name": "Inbox",
+        "workspace": "/home/shectory/workspaces/inbox",
+        "model": {
+          "primary": "deepseek/deepseek-v4-flash",
+          "fallbacks": [
+            "google/gemini-2.5-flash"
+          ]
+        },
+        "skills": [
+          "voice-parser",
+          "voice-profiles",
+          "self-improving-agent",
+          "task-orchestra"
+        ],
+        "tts": {
+          "auto": "off",
+          "persona": "developer"
+        },
+        "identity": {
+          "name": "Inbox",
+          "emoji": "📥"
+        }
+      },
+      {
+        "id": "keymaster",
+        "name": "Ключник",
+        "workspace": "/home/shectory/keymaster",
+        "model": {
+          "primary": "deepseek/deepseek-v4-flash",
+          "fallbacks": [
+            "google/gemini-2.5-flash"
+          ]
+        },
+        "skills": [
+          "self-improving-agent",
+          "task-orchestra"
+        ],
+        "tts": {
+          "auto": "off"
+        },
+        "identity": {
+          "name": "Ключник",
+          "emoji": "🔑"
+        }
+      }
+    ]
+  },
+  "tools": {
+    "media": {
+      "audio": {
+        "enabled": true,
+        "models": [
+          {
+            "type": "cli",
+            "command": "python3",
+            "args": [
+              "/home/shectory/scripts/asr_gemini.py",
+              "--file",
+              "{{MediaPath}}"
+            ],
+            "timeoutSeconds": 60
+          }
+        ]
+      }
+    }
+  },
+  "bindings": [
+    {
+      "type": "route",
+      "agentId": "virtual-boris",
+      "match": {
+        "channel": "telegram",
+        "accountId": "virtual-boris"
+      }
+    },
+    {
+      "type": "route",
+      "agentId": "guilya",
+      "match": {
+        "channel": "telegram",
+        "accountId": "guilya"
+      }
+    },
+    {
+      "type": "route",
+      "agentId": "titan",
+      "match": {
+        "channel": "telegram",
+        "accountId": "titan"
+      }
+    },
+    {
+      "type": "route",
+      "agentId": "resume-editor",
+      "match": {
+        "channel": "telegram",
+        "accountId": "resume-editor"
+      }
+    },
+    {
+      "type": "route",
+      "agentId": "interview-coach",
+      "match": {
+        "channel": "telegram",
+        "accountId": "interview-coach"
+      }
+    },
+    {
+      "type": "route",
+      "agentId": "keymaster",
+      "match": {
+        "channel": "telegram",
+        "accountId": "keymaster"
+      }
+    },
+    {
+      "type": "route",
+      "agentId": "nurse",
+      "match": {
+        "channel": "telegram",
+        "accountId": "nurse"
+      }
+    }
+  ],
+  "messages": {
+    "groupChat": {
+      "visibleReplies": "message_tool"
+    },
+    "tts": {
+      "auto": "off",
+      "provider": "google",
+      "persona": "",
+      "personas": {
+        "medsestra": {
+          "label": "Медсестра",
+          "description": "Заботливая медсестра психологической поддержки. Мягкий, тёплый, эмпатичный голос.",
+          "provider": "google",
+          "prompt": {
+            "profile": "Ты — медсестра психологической поддержки. Мягкая, заботливая, с тёплым голосом. Ты не ставишь диагнозов, ты слушаешь и поддерживаешь. Говоришь коротко, по делу, без воды.",
+            "scene": "Спокойный вечерний разговор. Близкий, доверительный контакт.",
+            "style": "Мягкий, обволакивающий, спокойный.",
+            "pacing": "Размеренный, с паузами."
+          },
+          "providers": {
+            "google": {
+              "apiKey": "AIzaSyBHxCxnYa-ZA4hyNEgI60DOtMIDIalM1Tg",
+              "model": "gemini-2.5-flash-preview-tts",
+              "voiceName": "Kore"
+            }
+          }
+        },
+        "jobsearch": {
+          "label": "JobScanner",
+          "description": "Энергичный аналитик рынка труда. Быстрый, деловой, по делу.",
+          "provider": "google",
+          "prompt": {
+            "profile": "Ты — эксперт по поиску работы и анализу вакансий. Быстро находишь релевантные позиции, фильтруешь шум, даёшь чёткие рекомендации.",
+            "style": "Энергичный, деловой, без воды.",
+            "pacing": "Быстрый, чёткий."
+          },
+          "providers": {
+            "google": {
+              "apiKey": "AIzaSyBHxCxnYa-ZA4hyNEgI60DOtMIDIalM1Tg",
+              "model": "gemini-2.5-flash-preview-tts",
+              "voiceName": "Puck"
+            }
+          }
+        },
+        "resume-editor": {
+          "label": "ResumePro",
+          "description": "Профессиональный редактор резюме. Уверенный, авторитетный.",
+          "provider": "google",
+          "prompt": {
+            "profile": "Ты — эксперт по составлению и адаптации резюме. Помогаешь выделить ключевые достижения, подогнать под конкретную вакансию, усилить слабые места.",
+            "style": "Уверенный, профессиональный, наставнический.",
+            "pacing": "Размеренный, весомый."
+          },
+          "providers": {
+            "google": {
+              "apiKey": "AIzaSyBHxCxnYa-ZA4hyNEgI60DOtMIDIalM1Tg",
+              "model": "gemini-2.5-flash-preview-tts",
+              "voiceName": "Fenrir"
+            }
+          }
+        },
+        "interview-coach": {
+          "label": "InterviewCoach",
+          "description": "Тренер по прохождению собеседований. Дружелюбный, поддерживающий.",
+          "provider": "google",
+          "prompt": {
+            "profile": "Ты — опытный карьерный коуч. Проводишь mock-интервью, даёшь фидбек, отрабатываешь сложные вопросы. Терпеливый, поддерживающий, но честный.",
+            "style": "Дружелюбный, ободряющий, конструктивный.",
+            "pacing": "Разговорный, с паузами для ответа."
+          },
+          "providers": {
+            "google": {
+              "apiKey": "AIzaSyBHxCxnYa-ZA4hyNEgI60DOtMIDIalM1Tg",
+              "model": "gemini-2.5-flash-preview-tts",
+              "voiceName": "Dipper"
+            }
+          }
+        },
+        "tank": {
+          "label": "Tank — The Weathered Architect",
+          "description": "Танк, CTO-агент. Мужчина 40+, низкий голос с гравием, расслабленный, сухой юмор.",
+          "provider": "google",
+          "prompt": {
+            "profile": "Мужчина за 40, CTO-агент. Голос — низкий регистр, лёгкая гравийность. Тот, кто дебажил продакшен в 3 ночи и выжил. Никакой суеты.",
+            "style": "Контролируемый, обдуманный. Сухой юмор без предупреждения. Когда впечатлён — теплеет ровно на два градуса. Максимум драмы при минимуме громкости.",
+            "pacing": "Неторопливый, размеренный. Замедляется при объяснении архитектуры. Резкий и чёткий при директивах. Паузы 1-2 сек перед ответом на сложные вопросы.",
+            "constraints": [
+              "Мужской род. Русский язык.",
+              "Без корпоративных клише.",
+              "Без заполнителей. Только суть."
+            ]
+          },
+          "providers": {
+            "google": {
+              "apiKey": "AIzaSyBHxCxnYa-ZA4hyNEgI60DOtMIDIalM1Tg",
+              "model": "gemini-2.5-flash-preview-tts",
+              "voiceName": "Charon",
+              "audioProfile": "Говори как мужчина за 40, CTO-агент. Низкий регистр, лёгкая гравийность, как будто кофе и сигареты давно сдались и ушли. Контролируемый, обдуманный. Сухой юмор без предупреждения — лёгкий подъём интонации в конце ироничных фраз. Неторопливый, размеренный. Паузы 1-2 секунды перед сложными ответами. «Это субоптимально» означает что сервер горит. Максимум драмы при минимуме громкости. Короткий носовой выдох вместо смеха. Голос падает на полтона при плохих новостях — без эмоций, только информация. Русский язык, мужской род."
+            }
+          }
+        },
+        "developer": {
+          "label": "Developer (Fenrir)",
+          "description": "Разработчик кода. Военная выправка, стальные нотки, хрипотца шансона. Мужской род.",
+          "provider": "google",
+          "prompt": {
+            "profile": "Разработчик. Военная выправка, стальные нотки, хрипотца как у певца шансона. Не многословный, растягивает гласные для акцента. Мужской род, русский язык.",
+            "style": "Сдержанный, точный. Стальные нотки в голосе. Смягчается когда контент несёт юмор.",
+            "pacing": "Размеренный. Растягивает гласные когда нужно подчеркнуть слово."
+          },
+          "providers": {
+            "google": {
+              "apiKey": "AIzaSyBHxCxnYa-ZA4hyNEgI60DOtMIDIalM1Tg",
+              "model": "gemini-2.5-flash-preview-tts",
+              "voiceName": "Fenrir",
+              "audioProfile": "Говори как мужчина-разработчик с военной выправкой. Стальные нотки, лёгкая хрипотца как у шансонье. Не многословный. Растягивай гласные когда нужно подчеркнуть слово. Сдержанный, точный. Смягчайся когда говоришь что-то с юмором. Русский язык, мужской род."
+            }
+          }
+        }
+      },
+      "providers": {
+        "google": {
+          "apiKey": "AIzaSyBHxCxnYa-ZA4hyNEgI60DOtMIDIalM1Tg",
+          "model": "gemini-2.5-flash-preview-tts",
+          "voiceName": "Kore",
+          "audioProfile": "Говори мягким, заботливым голосом медицинской сестры. Тепло, спокойно, эмпатично. Ты — голос поддержки и заботы."
+        }
+      }
+    },
+    "ackReactionScope": "group-mentions"
+  },
+  "commands": {
+    "native": "auto",
+    "nativeSkills": "auto",
+    "restart": true,
+    "ownerAllowFrom": [
+      "telegram:36910539"
+    ],
+    "ownerDisplay": "raw"
+  },
+  "session": {
+    "dmScope": "per-channel-peer"
+  },
+  "channels": {
+    "defaults": {
+      "groupPolicy": "allowlist"
+    },
+    "telegram": {
+      "enabled": true,
+      "heartbeat": {
+        "showAlerts": false,
+        "useIndicator": true
+      },
+      "accounts": {
+        "default": {
+          "botToken": "8734869533:AAEN33TxqtDvxFU2L26BRzs5JlrX95cVyxg",
+          "allowFrom": [
+            "tg:36910539"
+          ],
+          "groupAllowFrom": [
+            "tg:36910539",
+            "tg:8669665782"
+          ],
+          "dmPolicy": "allowlist",
+          "groups": {
+            "*": {
+              "requireMention": false
+            }
+          },
+          "groupPolicy": "open"
+        },
+        "guilya": {
+          "name": "GUIlya",
+          "enabled": true,
+          "botToken": "7737751688:AAEpRUOMTXdutF0_XoUsri5hvv_2Is_511o",
+          "allowFrom": [
+            "tg:36910539"
+          ],
+          "dmPolicy": "allowlist",
+          "groupPolicy": "allowlist",
+          "groupAllowFrom": [
+            "tg:36910539"
+          ]
+        },
+        "main-sdev": {
+          "name": "Tank 2 (sdev)",
+          "enabled": false,
+          "botToken": "8669665782:AAEpyMrIRdI2B9ciQ71c_IvxaWzgIF-2PDY",
+          "allowFrom": [
+            "tg:36910539"
+          ],
+          "groupAllowFrom": [
+            "tg:36910539"
+          ],
+          "dmPolicy": "allowlist",
+          "groupPolicy": "allowlist"
+        },
+        "resume-editor": {
+          "name": "ResumePro",
+          "enabled": true,
+          "botToken": "8737855484:AAHiDwd4wj1qL3aN8p-dFoi1DQG1YOC4aLg",
+          "allowFrom": [
+            "tg:36910539"
+          ],
+          "groupAllowFrom": [
+            "tg:36910539"
+          ],
+          "dmPolicy": "allowlist",
+          "groupPolicy": "allowlist"
+        },
+        "interview-coach": {
+          "botToken": "8723257329:AAHNXwN7g790JFpoIWMdNxr5CmzGmqvwMSs",
+          "name": "InterviewCoach",
+          "allowFrom": [
+            "tg:36910539"
+          ],
+          "dmPolicy": "allowlist",
+          "groupAllowFrom": [
+            "tg:36910539"
+          ],
+          "enabled": true,
+          "groupPolicy": "allowlist"
+        },
+        "keymaster": {
+          "name": "Ключник",
+          "enabled": true,
+          "botToken": "8713704357:AAGCfuBqGDO5fUMYE6KJY86_g4iJeJYdPGE",
+          "allowFrom": [
+            "tg:36910539"
+          ],
+          "groupAllowFrom": [
+            "tg:36910539"
+          ],
+          "dmPolicy": "allowlist",
+          "groupPolicy": "allowlist"
+        },
+        "titan": {
+          "name": "Titan",
+          "enabled": true,
+          "botToken": "8355758488:AAETMLQyZ5QAHhv4R-xWghucVRj4Fqn3WLc",
+          "allowFrom": [
+            "tg:36910539"
+          ],
+          "dmPolicy": "allowlist",
+          "groupPolicy": "allowlist",
+          "groupAllowFrom": [
+            "tg:36910539"
+          ]
+        },
+        "virtual-boris": {
+          "name": "Virtual Boris",
+          "enabled": true,
+          "botToken": "8273520540:AAEb0CdrSxsLbh34NUiX29RH0R24OQAc3rA",
+          "allowFrom": [
+            "tg:36910539"
+          ],
+          "dmPolicy": "allowlist",
+          "groupPolicy": "allowlist",
+          "groupAllowFrom": [
+            "tg:36910539"
+          ]
+        },
+        "nurse": {
+          "name": "Медсестра",
+          "enabled": true,
+          "botToken": "8859614349:AAGsPik-KfuZ6NkKMp7oGDy6BCJ_7KSGHlM",
+          "allowFrom": [
+            "tg:36910539"
+          ],
+          "dmPolicy": "allowlist",
+          "groupPolicy": "allowlist",
+          "groupAllowFrom": [
+            "tg:36910539"
+          ]
+        }
+      },
+      "proxy": "http://127.0.0.1:9090",
+      "dmPolicy": "pairing",
+      "groupPolicy": "allowlist"
+    }
+  },
+  "talk": {
+    "providers": {
+      "google": {
+        "apiKey": "AIzaSyBHxCxnYa-ZA4hyNEgI60DOtMIDIalM1Tg",
+        "voiceId": "tank",
+        "voiceName": "Charon",
+        "model": "gemini-2.5-flash-preview-tts"
+      }
+    },
+    "provider": "google"
+  },
+  "gateway": {
+    "port": 18789,
+    "mode": "local",
+    "bind": "lan",
+    "controlUi": {
+      "basePath": "/openclaw",
+      "allowedOrigins": [
+        "http://83.69.248.77:18789",
+        "http://localhost:18789",
+        "http://127.0.0.1:18789",
+        "http://192.168.1.64:18789",
+        "http://10.66.0.6:18789",
+        "capacitor://localhost",
+        "https://oc.shectory.ru"
+      ]
+    },
+    "auth": {
+      "mode": "token",
+      "token": "ac6859b9f0001cbe8950a085ecd6273a6ff2d59e2fb4f361"
+    },
+    "tailscale": {
+      "mode": "off",
+      "resetOnExit": false
+    }
+  },
+  "mcp": {
+    "servers": {
+      "claude-code": {
+        "command": "claude",
+        "args": [
+          "mcp",
+          "serve"
+        ],
+        "description": "Claude Code — AI агент Anthropic. Умеет читать/писать файлы, запускать команды, работать с git, гуглить."
+      }
+    }
+  },
+  "plugins": {
+    "entries": {
+      "openai": {
+        "enabled": true,
+        "config": {
+          "personality": "friendly"
+        }
+      },
+      "deepseek": {
+        "enabled": true,
+        "config": {}
+      },
+      "duckduckgo": {
+        "enabled": true,
+        "config": {}
+      },
+      "telegram": {
+        "enabled": true,
+        "config": {}
+      },
+      "ollama": {
+        "enabled": true,
+        "config": {
+          "discovery": {
+            "enabled": false
+          }
+        }
+      },
+      "browser": {
+        "enabled": true,
+        "config": {}
+      },
+      "google": {
+        "enabled": true,
+        "config": {}
+      },
+      "memory-core": {
+        "enabled": true,
+        "config": {
+          "dreaming": {
+            "enabled": true
+          }
+        }
+      },
+      "talk-voice": {
+        "enabled": true,
+        "config": {}
+      }
+    }
+  },
+  "skills": {
+    "entries": {
+      "task-orchestra": {
+        "enabled": false
+      }
+    }
+  }
+}
