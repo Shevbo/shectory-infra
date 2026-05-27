@@ -48,6 +48,16 @@ python3 /home/shectory/skills/voice-parser/scripts/download_and_parse.py <file_i
 
 Скрипт сам попробует Bot API, и если файл >20MB — автоматически скачает через Telethon (без участия агента).
 
+**Формат C** — большой аудиофайл через Google Drive (записи звонков, диктофон):
+```
+https://drive.google.com/file/d/XXXXXXXXXX/view
+```
+→ Скачай и транскрибируй:
+```bash
+python3 /home/shectory/skills/voice-parser/scripts/download_from_gdrive.py <ссылка_или_file_id>
+```
+Этот формат для файлов >20MB (записи рекрутеров, встреч). Размер не ограничен.
+
 **ВАЖНО:** Всегда используй `python3 /home/shectory/skills/...` — НИКОГДА не запускай скрипты как команды (без `python3` и без полного пути).
 
 В ОБОИХ случаях:
