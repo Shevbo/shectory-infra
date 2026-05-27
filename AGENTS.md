@@ -18,6 +18,7 @@
 | 🔍 QAper | `qaper` | `curl "http://127.0.0.1:9090/api/agent/qaper/message?from=main&message=..."` |
 | 🎨 GUIlya | `guilya` | `curl "http://127.0.0.1:9090/api/agent/guilya/message?from=main&message=..."` |
 | 🎯 InterviewCoach | `interview-coach` | `curl "http://127.0.0.1:9090/api/agent/interview-coach/message?from=main&message=..."` |
+| 🏠 SmartHome | `smarthome` | `curl "http://127.0.0.1:9090/api/agent/smarthome/message?from=main&message=..."` |
 
 Тяжёлые данные — в inbox получателя: `~/workspaces/inbox/<agent_id>/`
 
@@ -43,3 +44,31 @@
 - Все внешние вызовы через Lineman (127.0.0.1:9090).
 - Не лезть в env vars. Не спрашивать ключи.
 - Lineman не отвечает → материалы Клоду и ждать.
+
+---
+
+## 🔒 Работа с секретами — без чата и без логов
+
+**ПРАВИЛО:** значения секретов (токены, пароли, ключи) **никогда** не упоминаются в тексте сообщений, не передаются через чат, не выводятся в лог.
+
+### Узнать где лежит секрет (без одобрения)
+```bash
+curl -s "http://127.0.0.1:9093/keymaster/query?name=GEMINI_API_KEY&requester=<твой_id>"
+```
+
+### Прочитать значение напрямую из файла (без чата)
+```bash
+VAL=$(cat ~/.openclaw/credentials/имя-файла)
+# используй $VAL в коде, не выводи его
+```
+
+### Если нужно само значение — через approval-flow
+```bash
+# Запросить у Ключника (Борис получит TG, ответит ОК <id>)
+curl -s -X POST "http://127.0.0.1:9093/keymaster/request-value?name=SECRET_NAME&requester=<id>&purpose=описание"
+# → {"request_id": "abc123", "status": "pending"}
+
+# После ОК от Бориса — забрать (самоудаляется):
+curl -s "http://127.0.0.1:9093/keymaster/deliver?request_id=abc123"
+```
+
