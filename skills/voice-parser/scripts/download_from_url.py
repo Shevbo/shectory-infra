@@ -77,50 +77,72 @@ def _download_gdrive(url: str, out_dir: Path) -> Path:
     return max(candidates, key=lambda p: p.stat().st_size)
 
 
-def _mailru_direct_url(public_url: str) -> str:
-    """Получаем прямую ссылку на файл через Mail.ru Cloud public API."""
-    import requests
-    proxies = {"http": LINEMAN_PROXY, "https": LINEMAN_PROXY}
+def _download_mailru(public_url: str, out_dir: Path) -> Path:
+    """Mail.ru Cloud публичные ссылки — без авторизации.
 
-    # Извлечь public key из URL вида:
-    #   https://cloud.mail.ru/public/XXXX/filename.mp4
+    tokens/download требует логин; рабочий флоу:
+    visit page (oid cookie) -> dispatcher -> GET {wg_server}/{weblink} -> stream to file.
+    CDN серверы clocloN.cloud.mail.ru блокируют HTTPS через Lineman, поэтому
+    скачиваем напрямую без прокси.
+    """
+    import requests
+
     m = re.search(r"cloud\.mail\.ru/public/([^?#]+)", public_url)
     if not m:
         raise ValueError(f"Cannot extract Mail.ru Cloud public path from: {public_url}")
-    public_path = "/" + m.group(1)  # e.g. /AbCd/interview.mp4
+    weblink = m.group(1).strip("/")  # e.g. "V8To/awDjFQGHa"
 
-    # Шаг 1: получить dispatcher (список серверов для скачивания)
-    disp = requests.get(
-        "https://cloud.mail.ru/api/v2/dispatcher",
-        params={"api": "2"},
-        proxies=proxies,
-        timeout=15,
-        headers={"Referer": public_url},
+    ua = (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) "
+        "Chrome/124.0.0.0 Safari/537.36"
     )
-    disp.raise_for_status()
-    servers = disp.json().get("body", {}).get("get", [])
-    if not servers:
-        raise RuntimeError("Mail.ru dispatcher returned no download servers")
-    base_url = servers[0].get("url", "").rstrip("/")
+    session = requests.Session()
+    session.headers["User-Agent"] = ua
 
-    # Шаг 2: получить метаданные файла (размер, хэш)
-    meta = requests.get(
+    # Шаг 1: получаем oid session cookie
+    session.get(public_url, timeout=20)
+
+    # Шаг 2: CDN-сервер для публичных вебссылок
+    disp_r = session.get("https://cloud.mail.ru/api/v2/dispatcher", params={"api": "2"}, timeout=15)
+    disp_r.raise_for_status()
+    wg = disp_r.json().get("body", {}).get("weblink_get", [])
+    if not wg:
+        raise RuntimeError("Mail.ru dispatcher returned no weblink_get servers")
+    server = wg[0]["url"].rstrip("/")
+
+    # Шаг 3: GET {server}/{weblink} — сервер редиректит на подписанный CDN URL
+    # (session нужна для передачи oid cookie, иначе 403 на финальном CDN)
+    dl_url = f"{server}/{weblink}"
+    print(f"⬇️  Mail.ru Cloud → {dl_url[:80]}...")
+
+    # Получаем имя файла из API
+    fi = session.get(
         "https://cloud.mail.ru/api/v2/file",
-        params={"home": public_path, "api": "2", "access_token": ""},
-        proxies=proxies,
-        timeout=15,
-        headers={"Referer": public_url},
+        params={"api": "2", "weblink": weblink},
+        timeout=10,
     )
-    meta.raise_for_status()
-    body = meta.json().get("body", {})
-    file_hash = body.get("hash", "")
-    if not file_hash:
-        # Попробуем без токена через публичный weblink
-        # Fallback: direct URL как base_url + weblink
-        weblink = body.get("weblink", public_path.lstrip("/"))
-        return f"{base_url}/{weblink}?key="
+    filename = fi.json().get("body", {}).get("name", "") if fi.status_code == 200 else ""
 
-    return f"{base_url}/{file_hash}?key="
+    out_dir.mkdir(parents=True, exist_ok=True)
+    out_path = out_dir / (filename if filename else f"mailru_{weblink.replace('/', '_')}")
+
+    resp = session.get(dl_url, timeout=30, allow_redirects=True, stream=True)
+    if resp.status_code != 200:
+        raise RuntimeError(f"Mail.ru CDN returned {resp.status_code} for {dl_url}")
+
+    total = int(resp.headers.get("content-length", 0))
+    downloaded = 0
+    with open(out_path, "wb") as f:
+        for chunk in resp.iter_content(chunk_size=1024 * 1024):
+            if chunk:
+                f.write(chunk)
+                downloaded += len(chunk)
+                if total:
+                    pct = downloaded * 100 // total
+                    print(f"\r  {pct}% ({downloaded // 1024 // 1024} MB / {total // 1024 // 1024} MB)", end="", flush=True)
+    print()
+    return out_path
 
 
 def _yadisk_direct_url(public_url: str) -> str:
@@ -192,9 +214,7 @@ def download(url: str, out_dir: Path) -> Path:
         return _wget_download(direct, out_dir)
 
     if is_mailru(url):
-        print(f"⬇️  Mail.ru Cloud → resolving direct URL...")
-        direct = _mailru_direct_url(url)
-        return _wget_download(direct, out_dir)
+        return _download_mailru(url, out_dir)
 
     if is_yadisk(url):
         print(f"⬇️  Yandex.Disk → resolving direct URL...")
