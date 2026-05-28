@@ -1,4 +1,3 @@
-import re
 from .base import get_session, retry, CLEVEL_PATTERN
 
 NAME = "remoteok"
