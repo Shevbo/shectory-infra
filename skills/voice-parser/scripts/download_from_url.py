@@ -7,6 +7,7 @@ Usage:
 
 Supported URL types (автоматическое определение):
   Google Drive     https://drive.google.com/file/d/ID/view
+  Mail.ru Cloud    https://cloud.mail.ru/public/XXXX/file.mp4
   Yandex.Disk      https://disk.yandex.ru/d/... or https://yadi.sk/d/...
   Dropbox          https://www.dropbox.com/s/.../file.mp4?dl=0
   OneDrive         https://1drv.ms/... or https://onedrive.live.com/...
@@ -46,6 +47,10 @@ def is_onedrive(url: str) -> bool:
     return "1drv.ms" in url or "onedrive.live.com" in url or "sharepoint.com" in url
 
 
+def is_mailru(url: str) -> bool:
+    return "cloud.mail.ru" in url
+
+
 # ── Per-platform downloaders ────────────────────────────────────────
 
 def _download_gdrive(url: str, out_dir: Path) -> Path:
@@ -72,6 +77,52 @@ def _download_gdrive(url: str, out_dir: Path) -> Path:
     return max(candidates, key=lambda p: p.stat().st_size)
 
 
+def _mailru_direct_url(public_url: str) -> str:
+    """Получаем прямую ссылку на файл через Mail.ru Cloud public API."""
+    import requests
+    proxies = {"http": LINEMAN_PROXY, "https": LINEMAN_PROXY}
+
+    # Извлечь public key из URL вида:
+    #   https://cloud.mail.ru/public/XXXX/filename.mp4
+    m = re.search(r"cloud\.mail\.ru/public/([^?#]+)", public_url)
+    if not m:
+        raise ValueError(f"Cannot extract Mail.ru Cloud public path from: {public_url}")
+    public_path = "/" + m.group(1)  # e.g. /AbCd/interview.mp4
+
+    # Шаг 1: получить dispatcher (список серверов для скачивания)
+    disp = requests.get(
+        "https://cloud.mail.ru/api/v2/dispatcher",
+        params={"api": "2"},
+        proxies=proxies,
+        timeout=15,
+        headers={"Referer": public_url},
+    )
+    disp.raise_for_status()
+    servers = disp.json().get("body", {}).get("get", [])
+    if not servers:
+        raise RuntimeError("Mail.ru dispatcher returned no download servers")
+    base_url = servers[0].get("url", "").rstrip("/")
+
+    # Шаг 2: получить метаданные файла (размер, хэш)
+    meta = requests.get(
+        "https://cloud.mail.ru/api/v2/file",
+        params={"home": public_path, "api": "2", "access_token": ""},
+        proxies=proxies,
+        timeout=15,
+        headers={"Referer": public_url},
+    )
+    meta.raise_for_status()
+    body = meta.json().get("body", {})
+    file_hash = body.get("hash", "")
+    if not file_hash:
+        # Попробуем без токена через публичный weblink
+        # Fallback: direct URL как base_url + weblink
+        weblink = body.get("weblink", public_path.lstrip("/"))
+        return f"{base_url}/{weblink}?key="
+
+    return f"{base_url}/{file_hash}?key="
+
+
 def _yadisk_direct_url(public_url: str) -> str:
     """Получаем прямую ссылку через Yandex.Disk public API."""
     import requests
@@ -96,7 +147,8 @@ def _wget_download(url: str, out_dir: Path, hint_name: str = "") -> Path:
         "--no-check-certificate",
         "--content-disposition",   # уважать filename из заголовков
         "-q", "--show-progress",
-        f"--proxy={LINEMAN_PROXY}",
+        # Прокси для wget должен быть задан через переменные окружения (http_proxy/https_proxy) или не использоваться вовсе.
+        # Explicit --proxy=URL приводит к ошибке 'Invalid boolean'.
         "--tries=3",
         "--timeout=120",
         "-P", str(out_dir),
@@ -137,6 +189,11 @@ def download(url: str, out_dir: Path) -> Path:
     if is_dropbox(url):
         direct = _dropbox_direct(url)
         print(f"⬇️  Dropbox → direct download")
+        return _wget_download(direct, out_dir)
+
+    if is_mailru(url):
+        print(f"⬇️  Mail.ru Cloud → resolving direct URL...")
+        direct = _mailru_direct_url(url)
         return _wget_download(direct, out_dir)
 
     if is_yadisk(url):
