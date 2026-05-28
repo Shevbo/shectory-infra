@@ -582,9 +582,9 @@
         "name": "InterviewCoach",
         "workspace": "/home/shectory/workspaces/interview-coach",
         "model": {
-          "primary": "google/gemini-2.5-flash",
+          "primary": "deepseek/deepseek-v4-flash",
           "fallbacks": [
-            "deepseek/deepseek-v4-flash"
+            "google/gemini-2.5-flash"
           ]
         },
         "skills": [
@@ -600,6 +600,11 @@
         "identity": {
           "name": "InterviewCoach",
           "emoji": "🎯"
+        },
+        "tools": {
+          "elevated": {
+            "enabled": false
+          }
         }
       },
       {
@@ -665,9 +670,9 @@
         "workspace": "/home/shectory/workspaces/titan",
         "agentDir": "/home/shectory/.openclaw/agents/titan/agent",
         "model": {
-          "primary": "deepseek/deepseek-v4-flash",
+          "primary": "google/gemini-2.5-flash",
           "fallbacks": [
-            "google/gemini-2.5-flash"
+            "deepseek/deepseek-v4-flash"
           ]
         },
         "skills": [
