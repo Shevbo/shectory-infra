@@ -701,6 +701,16 @@ LOW_LEVEL_ROLES = [
     "store director", "директор по работе с клиент",
 ]
 
+# Foreign source routing constants
+FOREIGN_REMOTE_SOURCES = {"remoteok", "wwr", "jobicy", "hn_hiring"}
+EU_KEYWORDS = {"germany", "netherlands", "france", "portugal", "spain", "poland",
+               "czech", "austria", "sweden", "denmark", "finland", "norway",
+               "europe", "eu", "european"}
+US_KEYWORDS = {"united states", "usa", "u.s.", "new york", "san francisco", "seattle",
+               "austin", "boston", "chicago", "los angeles", "california"}
+RU_KEYWORDS = {"russia", "москва", "moscow", "санкт", "спб", "казан", "новосибир",
+               "россия", "екатеринб"}
+
 
 def score_vacancy(job):
     """Score 0-100. Исправлена ложная оценка низовых ролей."""
@@ -774,6 +784,32 @@ def score_vacancy(job):
         score += 5
 
     return min(score, 100)
+
+
+_VISA_RE = re.compile(r"(?i)(visa spon|relocation|h1b|blue card|work permit|visa support)")
+_CLEVEL_EXACT_RE = re.compile(
+    r"(?i)\b(CTO|Chief Technology Officer|VP Engineering|VP of Engineering|Head of Engineering)\b"
+)
+_DISQUALIFY_RE = re.compile(
+    r"(?i)(us citizen|security clearance|must be authorized|only authorized to work)"
+)
+FOREIGN_SCORED_SOURCES = {"remoteok", "wwr", "jobicy", "hn_hiring", "linkedin"}
+
+
+def score_vacancy_foreign_delta(job: dict) -> int:
+    if job.get("source") not in FOREIGN_SCORED_SOURCES:
+        return 0
+    delta = 0
+    name = (job.get("name") or "").lower()
+    desc = ((job.get("snippet") or {}).get("description") or "").lower()
+    full = name + " " + desc
+    if _CLEVEL_EXACT_RE.search(full):
+        delta += 15
+    if _VISA_RE.search(full):
+        delta += 10
+    if _DISQUALIFY_RE.search(full):
+        delta -= 20
+    return delta
 
 
 # ────────────────────────────────────────────────────────────────────
@@ -852,7 +888,22 @@ def format_salary(job):
 
 
 def classify_section(job):
-    """Однопроходная классификация вакансии: remote/hybrid/office/project."""
+    """Classify job into section. Returns one of: remote/hybrid/office/project/foreign_remote/relocation_us/relocation_eu."""
+    source = job.get("source", "")
+
+    if source in FOREIGN_REMOTE_SOURCES:
+        return "foreign_remote"
+
+    if source == "linkedin":
+        area = (job.get("area") or {}).get("name", "").lower()
+        if any(k in area for k in RU_KEYWORDS):
+            if job.get("remote_flag") or any(w in area for w in ["remote", "удален"]):
+                return "remote"
+            return "office"
+        if any(k in area for k in US_KEYWORDS):
+            return "relocation_us"
+        return "relocation_eu"
+
     if job.get("_work_format") == "project":
         return "project"
     name = (job.get("name") or "").lower()
@@ -870,10 +921,26 @@ def classify_section(job):
     return "office"
 
 
+def apply_source_cap(jobs_scored: list, cap: int = 5) -> list:
+    """Sort by score desc, keep at most cap entries per source."""
+    from collections import defaultdict
+    counts: dict = defaultdict(int)
+    result = []
+    for score, job in sorted(jobs_scored, key=lambda x: -x[0]):
+        src = job.get("source", "")
+        if counts[src] < cap:
+            result.append((score, job))
+            counts[src] += 1
+    return result
+
+
 def build_template_report(scored, date_str, stats):
     """Формирует отчёт по шаблону report-template.md (4 секции)."""
     # Разбиваем на секции — однопроходная классификация
-    sections = {"remote": [], "hybrid": [], "office": [], "project": []}
+    sections = {
+        "remote": [], "hybrid": [], "office": [], "project": [],
+        "foreign_remote": [], "relocation_us": [], "relocation_eu": [],
+    }
     for s, j in scored:
         sections[classify_section(j)].append((s, j))
     # Сортируем внутри каждой секции
@@ -882,6 +949,13 @@ def build_template_report(scored, date_str, stats):
         mid = sorted([x for x in sections[sec] if 40 <= x[0] <= 60], key=lambda x: -x[0])
         low = sorted([x for x in sections[sec] if x[0] < 40], key=lambda x: -x[0])
         sections[sec] = hot + mid + low
+
+    # Merge US + EU into combined relocation section with region flag
+    sections["relocation"] = (
+        [(s, dict(job, _region_flag="🇺🇸")) for s, job in sections.pop("relocation_us", [])]
+        + [(s, dict(job, _region_flag="🇪🇺")) for s, job in sections.pop("relocation_eu", [])]
+    )
+    sections["relocation"].sort(key=lambda x: -x[0])
 
     total_new = len(scored)
     hot_all = len([s for s, _ in scored if s > 60])
@@ -896,10 +970,12 @@ def build_template_report(scored, date_str, stats):
     ]
 
     section_config = [
-        ("remote", "🖥  **УДАЛЁНКА**"),
-        ("hybrid", "🏙  **ГИБРИД**"),
-        ("office", "🏢  **ОФИС**"),
-        ("project", "⚡  **ПРОЕКТЫ / ФРИЛАНС**"),
+        ("remote",         "🖥  **УДАЛЁНКА**"),
+        ("hybrid",         "🏙  **ГИБРИД**"),
+        ("office",         "🏢  **ОФИС**"),
+        ("foreign_remote", "🌐  **ЗАРУБЕЖНАЯ УДАЛЁНКА**"),
+        ("relocation",     "✈️  **РЕЛОКАЦИЯ**"),
+        ("project",        "⚡  **ПРОЕКТЫ / ФРИЛАНС**"),
     ]
 
     for sec_key, sec_title in section_config:
@@ -908,44 +984,28 @@ def build_template_report(scored, date_str, stats):
             continue
         lines.append(sec_title)
         lines.append("")
+        capped = apply_source_cap(sec_jobs, cap=5)
         count = 0
-        for score, job in sec_jobs[:4]:  # макс 4 на секцию
-            if count >= 8:  # макс 8 всего
-                break
+        for score, job in capped[:8]:
             count += 1
+            region_flag = job.get("_region_flag", "")
             icon = "🔥" if score > 60 else "📌"
             emp = (job.get("employer") or {}).get("name", "N/A")
             name = job.get("name", "")
             url = job.get("alternate_url") or ""
             area = (job.get("area") or {}).get("name", "")
             salary = format_salary(job)
-            req = (job.get("snippet") or {}).get("requirement", "")[:120]
-            req = re.sub(r'<[^>]+>', '', req).strip()
-            source = job.get("source", "web")
-            pub = (job.get("published_at") or "")[:10]
-
-            # Определяем тип занятости
-            if sec_key == "project":
-                emp_type = "проект"
-            elif source == "telegram":
-                emp_type = "постоянная"  # по умолчанию
-            else:
-                emp_type = "постоянная"
-
-            # Определяем локацию-иконку
-            loc_icon = "🌍 Remote" if sec_key == "remote" else f"📍 {area}" if area else "📍 —"
+            req = ((job.get("snippet") or {}).get("requirement")
+                   or (job.get("snippet") or {}).get("description") or "")[:120]
+            req = re.sub(r"<[^>]+>", "", req).strip()
+            emp_type = "проект" if sec_key == "project" else "постоянная"
+            loc_icon = "🌍 Remote" if sec_key in ("remote", "foreign_remote") else f"📍 {area}" if area else "📍 —"
 
             lines.append(f"{icon} **{name}** · {score}/100 · {emp_type}")
-
-            # Пытаемся определить отрасль
-            industry = ""
-            if emp and emp != "N/A":
-                industry = f"{emp}"
-            lines.append(f"🏢 {industry}" if industry else "")
-
+            lines.append(f"🏢 {region_flag} {emp}".strip() if region_flag else f"🏢 {emp}")
             lines.append(f"💰 {salary} · {loc_icon}")
             lines.append(f"📋 {req[:100]}" if req else "")
-            lines.append(f"🔗 {clean_hh_url(url)}")
+            lines.append(f"🔗 {url}")
             lines.append("")
 
         lines.append("━━━━━━━━━━━━━━━━━━━━━━")
@@ -1016,7 +1076,10 @@ def main():
     new_jobs = [(jid, job) for jid, job in all_jobs.items() if jid not in seen_ids]
     print(f"Новых (не виденных ранее): {len(new_jobs)}")
 
-    scored = [(score_vacancy(job), job) for _, job in new_jobs]
+    scored = [
+        (min(100, max(0, score_vacancy(job) + score_vacancy_foreign_delta(job))), job)
+        for _, job in new_jobs
+    ]
 
     # Gemini AI-фильтр (опционально)
     if use_gemini:
