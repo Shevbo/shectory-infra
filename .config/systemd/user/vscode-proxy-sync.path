@@ -1,0 +1,9 @@
+[Unit]
+Description=Watch keymaster proxy env file and re-sync VS Code settings on change
+
+[Path]
+PathModified=/home/shectory/keymaster/.lineman-proxy.env
+Unit=vscode-proxy-sync.service
+
+[Install]
+WantedBy=default.target

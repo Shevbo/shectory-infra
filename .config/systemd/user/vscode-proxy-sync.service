@@ -1,0 +1,12 @@
+[Unit]
+Description=Sync IProyal proxy from keymaster to VS Code Machine settings
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 /home/shectory/scripts/vscode-proxy-sync.py
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=default.target
