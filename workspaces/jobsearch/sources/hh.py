@@ -24,7 +24,7 @@ def clean_hh_url(url: str) -> str:
 
 
 def parse_hh_salary(text):
-    text = text.replace(" ", " ").replace("\xa0", " ").replace("–", "-")
+    text = re.sub(r"[\s \xa0]+", " ", text).replace("–", "-")
     currency = "RUR"
     if "₽" in text or "руб" in text:
         currency = "RUR"
@@ -35,8 +35,8 @@ def parse_hh_salary(text):
     m = re.search(r"от\s*([\d\s]+)\s*(?:до\s*([\d\s]+))?\s*(?:₽|руб|\$|€)", text, re.IGNORECASE)
     if m:
         salary = {"currency": currency}
-        frm = int(m.group(1).replace(" ", "")) if m.group(1) else None
-        to = int(m.group(2).replace(" ", "")) if m.group(2) else None
+        frm = int(re.sub(r"\s", "", m.group(1))) if m.group(1) else None
+        to = int(re.sub(r"\s", "", m.group(2))) if m.group(2) else None
         if frm and frm > 1000:
             salary["from"] = frm
         if to and to > 1000:
@@ -45,13 +45,13 @@ def parse_hh_salary(text):
             return salary
     m = re.search(r"до\s*([\d\s]+)\s*(?:₽|руб|\$|€)", text, re.IGNORECASE)
     if m:
-        val = int(m.group(1).replace(" ", ""))
+        val = int(re.sub(r"\s", "", m.group(1)))
         if val > 1000:
             return {"to": val, "currency": currency}
     m = re.search(r"([\d\s]+)\s*[-–]\s*([\d\s]+)\s*(?:₽|руб|\$|€)", text)
     if m:
-        frm = int(m.group(1).replace(" ", ""))
-        to = int(m.group(2).replace(" ", ""))
+        frm = int(re.sub(r"\s", "", m.group(1)))
+        to = int(re.sub(r"\s", "", m.group(2)))
         if frm > 1000 and to > 1000:
             return {"from": frm, "to": to, "currency": currency}
     return None
