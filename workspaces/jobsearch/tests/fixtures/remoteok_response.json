@@ -221,5 +221,18 @@
     "original": true,
     "logo": "",
     "url": "https://remoteOK.com/remote-jobs/remote-senior-vue-developer-lemon-io-1132383"
+  },
+  {
+    "id": 999001,
+    "slug": "chief-technology-officer-testcorp-999001",
+    "position": "Chief Technology Officer",
+    "company": "TestCorp",
+    "location": "Remote",
+    "url": "https://remoteok.com/remote-jobs/999001",
+    "description": "CTO role at a fast-growing startup.",
+    "tags": [
+      "exec",
+      "management"
+    ]
   }
 ]
