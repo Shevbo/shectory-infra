@@ -86,7 +86,6 @@ def fetch(params: dict) -> list[dict]:
             "employer": {"name": _parse_company(text)},
             "area": {"name": _parse_location(text)},
             "alternate_url": f"https://news.ycombinator.com/item?id={hit['objectID']}",
-            # Full text in snippet so callers can search for keywords anywhere
-            "snippet": {"description": text},
+            "snippet": {"description": text[:500]},
         })
     return jobs

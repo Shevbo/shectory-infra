@@ -38,12 +38,29 @@ def test_required_fields():
         assert "ycombinator.com" in job.get("alternate_url", "")
 
 
-def test_clevel_filter():
-    import re
-    pattern = re.compile(r"(?i)(CTO|CIO|Chief|Head of|VP|Director)")
-    for job in _parse_with_fixture():
-        full = job["name"] + " " + job.get("snippet", {}).get("description", "")
-        assert pattern.search(full), f"Non-C-level: {job['name']}"
+def test_clevel_filter_excludes_non_clevel():
+    """fetch() should drop hits that have no C-level keyword in the full text."""
+    from unittest.mock import patch, MagicMock
+    import sources.hn_hiring as hn
+
+    hn._thread_id_cache.clear()
+    thread_resp = MagicMock()
+    thread_resp.json.return_value = {"hits": [{"objectID": "42000000"}]}
+    comments_resp = MagicMock()
+    comments_resp.json.return_value = {
+        "hits": [
+            {"objectID": "1", "comment_text": "We are hiring backend developers, 2 years exp required."},
+            {"objectID": "2", "comment_text": "Looking for a Chief Technology Officer to lead our platform."},
+        ]
+    }
+    mock_session = MagicMock()
+    mock_session.get.side_effect = [thread_resp, comments_resp]
+
+    with patch("sources.hn_hiring.get_session", return_value=mock_session):
+        jobs = hn.fetch({"query": "CTO"})
+
+    assert len(jobs) == 1
+    assert jobs[0]["id"] == "2"
 
 
 def test_no_thread_graceful():
