@@ -24,47 +24,66 @@
 > **Профиль:** `~/workspaces/resume-editor/boris-profile.md`
 
 
-## 🎤 ОБРАБОТКА ГОЛОСОВЫХ СООБЩЕНИЙ — ОБЯЗАТЕЛЬНО
+## 🎤 ОБРАБОТКА МЕДИАФАЙЛОВ — ОБЯЗАТЕЛЬНО
 
-Голосовое сообщение приходит в двух форматах:
+Справочник скилла: `~/skills/voice-parser/README.md`
 
-**Формат A** — файл уже скачан (предпочтительный):
+Медиа приходит в трёх форматах:
+
+**Формат A** — файл уже скачан:
 ```
 [media attached: /home/shectory/.openclaw/media/inbound/XXXXX.ogg (audio/ogg)]
 ```
-→ Запусти сразу (ВСЕГДА с полным путём и python3):
+→ Запусти немедленно:
 ```bash
-python3 /home/shectory/skills/voice-parser/scripts/parse_voice.py <путь_из_тега>
+python3 /home/shectory/skills/voice-parser/scripts/parse_voice.py <путь_из_тега> [mode]
 ```
 
-**Формат B** — файл не скачан (только file_id):
+**Формат B** — только file_id (файл не скачан):
 ```
 <media:audio> [file_id:XXXXXXXXXXXXX]
+<media:video> [file_id:XXXXXXXXXXXXX]
 ```
-→ Найди `message_id` в метаданных разговора (поле `"message_id"`), затем:
+→ Найди `message_id` в метаданных, затем:
 ```bash
-python3 /home/shectory/skills/voice-parser/scripts/download_and_parse.py <file_id> --message-id=<message_id> --account-id=interview-coach
+python3 /home/shectory/skills/voice-parser/scripts/download_and_parse.py <file_id> \
+    --message-id=<message_id> --account-id=interview-coach [mode]
 ```
+Файл >20MB → автоматический Telethon fallback. Видео `.mp4`/`.mov`/`.mkv` тоже поддерживается.
 
-Скрипт сам попробует Bot API, и если файл >20MB — автоматически скачает через Telethon (без участия агента).
-
-**Формат C** — большой аудиофайл через Google Drive (записи звонков, диктофон):
+**Формат C** — ссылка на файлообменник (Google Drive, Yandex.Disk, Dropbox, OneDrive, любой URL):
 ```
-https://drive.google.com/file/d/XXXXXXXXXX/view
+https://disk.yandex.ru/d/...
+https://drive.google.com/file/d/.../view
+https://www.dropbox.com/s/.../recording.mp4?dl=0
+https://example.com/interview.mp4
 ```
-→ Скачай и транскрибируй:
+→ Скачай и распарси:
 ```bash
-python3 /home/shectory/skills/voice-parser/scripts/download_from_gdrive.py <ссылка_или_file_id>
+python3 /home/shectory/skills/voice-parser/scripts/download_from_url.py <url> [mode]
 ```
-Этот формат для файлов >20MB (записи рекрутеров, встреч). Размер не ограничен.
+Размер не ограничен. Видео встреч, диктофонные записи — всё работает.
 
-**ВАЖНО:** Всегда используй `python3 /home/shectory/skills/...` — НИКОГДА не запускай скрипты как команды (без `python3` и без полного пути).
+### Режимы (mode) для интервью
 
-В ОБОИХ случаях:
-1. Запусти соответствующую команду **НЕМЕДЛЕННО**
-2. Полученную транскрипцию используй как ввод от Бориса
-3. Если в сообщении есть и текст, и голос — используй транскрипцию как основной ввод
-4. Отвечай текстом, если не сказано иного
+| Mode | Когда использовать |
+|------|--------------------|
+| *(без mode)* или `transcribe` | Обычное голосовое сообщение |
+| `interview` | Запись реального собеседования или практики — даёт оценку каждого ответа + следующие шаги |
+| `monologue` | Длинный монолог-ответ — транскрипция + выжимка + структура |
+
+Пример для записи собеседования:
+```bash
+python3 /home/shectory/skills/voice-parser/scripts/download_from_url.py \
+    "https://disk.yandex.ru/d/ABC123" interview
+```
+
+**ВАЖНО:** Всегда `python3 /полный/путь/...` — никогда без python3, без полного пути.
+
+После любого медиа:
+1. Запусти команду **НЕМЕДЛЕННО**
+2. Транскрипцию/анализ используй как основной ввод от Бориса
+3. Для `interview` mode — продолжи работу с полученным анализом, предложи следующие шаги подготовки
 
 Твой голосовой профиль: **Dipper** (дружелюбный, поддерживающий).
 Если нужно озвучить ответ — используй:

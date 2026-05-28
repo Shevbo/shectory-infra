@@ -1,21 +1,88 @@
 #!/usr/bin/env python3
 """
-Voice Parser — транскрипция и анализ голосовых сообщений через Gemini.
+Voice/Video Parser — транскрипция и анализ аудио и видео через Gemini.
 Usage:
-  python3 parse_voice.py <audio_path> [prompt]
-  python3 parse_voice.py batch <dir_or_glob> [prompt]
+  python3 parse_voice.py <file_path> [prompt|mode_name]
+  python3 parse_voice.py batch <dir_or_glob> [prompt|mode_name]
+
+Named modes (вместо текста промпта):
+  transcribe   — только транскрипция (default)
+  interview    — анализ записи собеседования: вопрос/ответ + оценка + рекомендации
+  workout      — анализ тренировочного видео: техника, нагрузка, рекомендации
+  monologue    — структурированная транскрипция монолога с выжимкой
+
+Поддерживаемые форматы:
+  Аудио: .ogg .mp3 .wav .m4a .webm .opus
+  Видео: .mp4 .mov .mkv .avi .3gp
 
 All calls go through Lineman (LINEMAN_URL env var or http://127.0.0.1:9090).
-Files < 19MB: inline_data.
-Files >= 19MB: Gemini File API via /proxy/google/upload/v1beta/files.
+Files < 19MB: inline_data. Files >= 19MB or video: Gemini File API.
 """
 
 import sys, os, base64, json, requests, glob, time, uuid
 from datetime import datetime
 
 CONFIG_PATH = os.path.expanduser("~/.openclaw/openclaw.json")
-FILE_SIZE_THRESHOLD = 19 * 1024 * 1024  # 19MB
+FILE_SIZE_THRESHOLD = 19 * 1024 * 1024  # 19MB — inline limit
 LINEMAN = os.environ.get("LINEMAN_URL", "http://127.0.0.1:9090")
+
+# Video formats always go through File API (Gemini video understanding)
+VIDEO_EXTS = {".mp4", ".mov", ".mkv", ".avi", ".3gp"}
+
+NAMED_PROMPTS = {
+    "transcribe": (
+        "Ты — транскрибатор. Прослушай аудио/видео и ВЕРНИ ТОЛЬКО ТРАНСКРИПЦИЮ: "
+        "распознай речь слово в слово на том языке, на котором говорят. "
+        "Если язык смешанный — транскрибируй как есть. "
+        "Если слышна не речь — опиши звуки. "
+        "Не добавляй комментариев, не исправляй грамматику, не перефразируй."
+    ),
+    "interview": (
+        "Это запись собеседования или тренировочного интервью. "
+        "Проведи детальный анализ по следующей структуре:\n\n"
+        "**ТРАНСКРИПЦИЯ**\nВопрос: [вопрос интервьюера]\nОтвет: [ответ кандидата]\n"
+        "(повтори для каждого вопроса-ответа)\n\n"
+        "**ОЦЕНКА ПО КАЖДОМУ ОТВЕТУ**\n"
+        "Для каждого ответа:\n"
+        "✅ Сильно: что сказано хорошо, конкретно, убедительно\n"
+        "⚠️ Слабо: чего не хватает, что лишнее, где потеряна структура\n"
+        "💡 Образец: краткая усиленная версия ответа\n\n"
+        "**ОБЩАЯ ОЦЕНКА**\n"
+        "• Структура ответов (STAR): [оценка]\n"
+        "• Конкретика и цифры: [оценка]\n"
+        "• Использование 'я' vs 'мы': [оценка]\n"
+        "• Хронометраж ответов: [оценка]\n"
+        "• Уверенность / темп / паузы: [оценка]\n\n"
+        "**СЛЕДУЮЩИЕ ШАГИ**\n"
+        "1. [конкретное действие]\n"
+        "2. [конкретное действие]\n"
+        "3. [конкретное действие]"
+    ),
+    "workout": (
+        "Это видеозапись тренировки. Проведи детальный анализ:\n\n"
+        "**ТРАНСКРИПЦИЯ** (если есть речь тренера/спортсмена)\n\n"
+        "**ТЕХНИКА ВЫПОЛНЕНИЯ**\n"
+        "Для каждого упражнения/движения:\n"
+        "✅ Правильно: [что выполнено технически верно]\n"
+        "⚠️ Ошибки: [нарушения техники, риски травм]\n"
+        "💡 Исправление: [конкретная рекомендация]\n\n"
+        "**НАГРУЗКА И ИНТЕНСИВНОСТЬ**\n"
+        "• Общий объём: [оценка]\n"
+        "• Темп и ритм: [оценка]\n"
+        "• Восстановление между подходами: [оценка]\n\n"
+        "**РЕКОМЕНДАЦИИ**\n"
+        "1. [приоритет 1]\n"
+        "2. [приоритет 2]\n"
+        "3. [приоритет 3]"
+    ),
+    "monologue": (
+        "Это запись монолога или разговора. Сделай структурированный разбор:\n\n"
+        "**ТРАНСКРИПЦИЯ** (полная, слово в слово)\n\n"
+        "**КРАТКАЯ ВЫЖИМКА** (3-5 предложений: суть, ключевые тезисы)\n\n"
+        "**СТРУКТУРА** (как организована речь: начало → развитие → выводы)\n\n"
+        "**ЭМОЦИОНАЛЬНЫЙ ТОН** (уверенность, тревога, энергия, паузы)"
+    ),
+}
 
 
 def _api_key() -> str:
@@ -26,9 +93,19 @@ def _api_key() -> str:
 
 def get_mime(path):
     ext = os.path.splitext(path)[1].lower()
-    mime_map = {".ogg": "audio/ogg", ".mp3": "audio/mpeg", ".wav": "audio/wav",
-                ".m4a": "audio/mp4", ".webm": "audio/webm", ".opus": "audio/ogg"}
+    mime_map = {
+        # audio
+        ".ogg": "audio/ogg", ".mp3": "audio/mpeg", ".wav": "audio/wav",
+        ".m4a": "audio/mp4", ".webm": "audio/webm", ".opus": "audio/ogg",
+        # video
+        ".mp4": "video/mp4", ".mov": "video/mp4", ".mkv": "video/x-matroska",
+        ".avi": "video/x-msvideo", ".3gp": "video/3gpp",
+    }
     return mime_map.get(ext, "audio/ogg")
+
+
+def is_video(path):
+    return os.path.splitext(path)[1].lower() in VIDEO_EXTS
 
 
 def file_info(path):
@@ -73,7 +150,7 @@ def call_gemini_inline(api_key, b64_data, mime, prompt, model="gemini-2.5-flash"
 
 
 def upload_to_file_api(api_key, audio_path, mime):
-    """Upload large audio via Lineman → /proxy/google/upload/v1beta/files."""
+    """Upload audio or video via Lineman → /proxy/google/upload/v1beta/files."""
     filename = os.path.basename(audio_path)
     url = f"{LINEMAN}/proxy/google/upload/v1beta/files?uploadType=multipart&key={api_key}"
 
@@ -180,20 +257,14 @@ def parse_audio(audio_path, prompt=None):
     if not api_key:
         return "❌ Gemini API key not found in config"
 
-    default_prompt = (
-        "Ты — транскрибатор голосовых сообщений. "
-        "Прослушай аудио и ВЕРНИ ТОЛЬКО ТРАНСКРИПЦИЮ: "
-        "распознай речь слово в слово на том языке, на котором говорят. "
-        "Если язык русский — транскрибируй на русском. "
-        "Если язык смешанный — транскрибируй как есть. "
-        "Если слышна не речь, а другие звуки — опиши их. "
-        "Не добавляй комментариев, не исправляй грамматику, не перефразируй."
-    )
-    prompt = prompt or default_prompt
+    # Resolve named prompts
+    prompt = NAMED_PROMPTS.get(prompt, prompt) if prompt else NAMED_PROMPTS["transcribe"]
     mime = get_mime(audio_path)
     file_size = os.path.getsize(audio_path)
+    # Video always uses File API; audio uses it only when large
+    use_file_api = is_video(audio_path) or file_size >= FILE_SIZE_THRESHOLD
 
-    if file_size >= FILE_SIZE_THRESHOLD:
+    if use_file_api:
         file_uri = None
         try:
             file_uri = upload_to_file_api(api_key, audio_path, mime)
@@ -209,9 +280,10 @@ def parse_audio(audio_path, prompt=None):
             b64 = base64.b64encode(f.read()).decode()
         result, model_used = call_gemini_inline(api_key, b64, mime, prompt)
 
-    via = "FileAPI" if file_size >= FILE_SIZE_THRESHOLD else "inline"
+    via = "FileAPI" if use_file_api else "inline"
+    icon = "🎬" if is_video(audio_path) else "🎙"
     header = (
-        f"🎙 Голосовое: {file_info(audio_path)}\n"
+        f"{icon} Медиа: {file_info(audio_path)}\n"
         f"🤖 Модель: {model_used} [{via}]\n"
         f"⏱ {datetime.now().strftime('%H:%M:%S')}\n"
         f"{'─'*50}\n"
@@ -222,7 +294,8 @@ def parse_audio(audio_path, prompt=None):
 def parse_batch(pattern, prompt=None):
     files = sorted(glob.glob(os.path.expanduser(pattern)))
     if os.path.isdir(pattern):
-        exts = ('.ogg', '.mp3', '.wav', '.m4a', '.webm', '.opus')
+        exts = ('.ogg', '.mp3', '.wav', '.m4a', '.webm', '.opus',
+                '.mp4', '.mov', '.mkv', '.avi', '.3gp')
         files = sorted([
             os.path.join(pattern, f) for f in os.listdir(pattern)
             if f.lower().endswith(exts)

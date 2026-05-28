@@ -1,13 +1,17 @@
 #!/usr/bin/env python3
 """
-Download Telegram voice file by file_id and transcribe via Gemini.
+Download Telegram voice/video file by file_id and transcribe via Gemini.
 Usage:
-  python3 download_and_parse.py <file_id> [--message-id=<id>] [--account-id=<id>] [prompt]
+  python3 download_and_parse.py <file_id_or_url> [--message-id=<id>] [--account-id=<id>] [prompt|mode]
+
+  file_id_or_url  Telegram file_id  OR  любая URL (http/https) → роутит в download_from_url.py
 
   --message-id  Telegram message ID (from conversation metadata).
                 Required for Telethon fallback when file >20MB.
   --account-id  OpenClaw bot account ID (e.g. interview-coach).
                 Used to look up bot_id for Telethon dialog.
+
+Named modes: transcribe | interview | workout | monologue
 
 Gets bot token from openclaw.json (default account).
 Downloads to ~/.openclaw/media/inbound/, then calls parse_voice.py.
@@ -94,6 +98,10 @@ def download_via_telethon(message_id: str, account_id: str) -> Path:
     return Path(lines[-1])
 
 
+def _is_url(s: str) -> bool:
+    return s.startswith("http://") or s.startswith("https://")
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("file_id")
@@ -101,6 +109,15 @@ def main():
     parser.add_argument("--account-id", default="interview-coach")
     parser.add_argument("prompt", nargs="?", default=None)
     args = parser.parse_args()
+
+    # If first arg looks like a URL — delegate to download_from_url.py
+    if _is_url(args.file_id):
+        script = os.path.join(SCRIPTS_DIR, "download_from_url.py")
+        cmd = ["python3", script, args.file_id]
+        if args.prompt:
+            cmd.append(args.prompt)
+        os.execv(sys.executable, cmd)
+        return  # unreachable, execv replaces process
 
     token = get_bot_token(args.account_id)
     if not token:

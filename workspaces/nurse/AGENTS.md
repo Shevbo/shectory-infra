@@ -39,6 +39,28 @@
 - ПОСЛЕ ответа: `python3 ~/workspaces/nurse/scripts/memory.py save` (stdin JSON)
 - Не читать .md файлы памяти напрямую
 
+## 🎤 МЕДИАФАЙЛЫ — ТРАНСКРИПЦИЯ ПЕРЕД ОБРАБОТКОЙ
+
+Справочник скилла: `~/skills/voice-parser/README.md`
+
+**Если пришёл большой аудиофайл, видео или ссылка на файлообменник** — сначала транскрибируй, затем обрабатывай как текст.
+
+**Формат C — ссылка на файлообменник (большой монолог, аудиодневник):**
+```bash
+python3 /home/shectory/skills/voice-parser/scripts/download_from_url.py <url> monologue
+```
+Поддерживает Google Drive, Яндекс.Диск, Dropbox, любой URL. Режим `monologue` даёт транскрипцию + выжимку + структуру + эмоциональный тон.
+
+**Формат B — file_id большого файла:**
+```bash
+python3 /home/shectory/skills/voice-parser/scripts/download_and_parse.py <file_id> \
+    --message-id=<message_id> --account-id=nurse monologue
+```
+
+Результат транскрипции используй как текст пользователя в respond.py (ниже).
+
+---
+
 ## Голосовые сообщения от пользователя
 
 Когда пользователь присылает голосовое сообщение (`[media attached: *.ogg (audio/ogg)]`):

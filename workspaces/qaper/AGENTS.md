@@ -26,6 +26,18 @@ python3 /home/shectory/skills/voice-parser/scripts/download_and_parse.py <file_i
 **ВАЖНО:** Всегда  — НИКОГДА без python3 и без полного пути.
 Скрипт сам попробует Bot API, и если файл >20MB — автоматически скачает через Telethon.
 
+**Формат C** — ссылка на файлообменник (Google Drive, Яндекс.Диск, Dropbox, любой URL):
+```
+https://disk.yandex.ru/d/... или https://drive.google.com/... или любой https://
+```
+→ Скачай и транскрибируй:
+```bash
+python3 /home/shectory/skills/voice-parser/scripts/download_from_url.py <url>
+```
+Размер не ограничен. Видео (.mp4, .mov, .mkv) тоже поддерживается.
+
+Справочник скилла: `~/skills/voice-parser/README.md`
+
 В обоих случаях:
 1. Запусти **НЕМЕДЛЕННО**
 2. Полученную транскрипцию используй как ввод от Бориса

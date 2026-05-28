@@ -24,37 +24,55 @@
 > **Вики:** `gog docs cat 1lRuWgSKoL27ToHO7J29DRMK9w3P-4UBTRtoC1XzPV44`
 
 
-## 🎤 ОБРАБОТКА ГОЛОСОВЫХ СООБЩЕНИЙ — ОБЯЗАТЕЛЬНО
+## 🎤🎬 ОБРАБОТКА МЕДИАФАЙЛОВ — ОБЯЗАТЕЛЬНО
 
-Голосовое сообщение приходит в двух форматах:
+Справочник скилла: `~/skills/voice-parser/README.md`
 
-**Формат A** — файл уже скачан:
+**Формат A** — файл уже скачан (аудио или видео):
 ```
 [media attached: /home/shectory/.openclaw/media/inbound/XXXXX.ogg (audio/ogg)]
+[media attached: /home/shectory/.openclaw/media/inbound/XXXXX.mp4 (video/mp4)]
 ```
-→ Запусти (ВСЕГДА с полным путём и python3):
+→ Запусти немедленно:
 ```bash
+# Голосовое сообщение — транскрипция:
 python3 /home/shectory/skills/voice-parser/scripts/parse_voice.py <путь_из_тега>
+
+# Видео тренировки — детальный анализ:
+python3 /home/shectory/skills/voice-parser/scripts/parse_voice.py <путь_из_тега> workout
 ```
 
-**Формат B** — только file_id (файл не скачан):
+**Формат B** — только file_id:
 ```
 <media:audio> [file_id:XXXXXXXXXXXXX]
+<media:video> [file_id:XXXXXXXXXXXXX]
 ```
-→ Найди `message_id` в метаданных разговора, затем:
+→ Найди `message_id`, запусти:
 ```bash
-python3 /home/shectory/skills/voice-parser/scripts/download_and_parse.py <file_id> --message-id=<message_id> --account-id=titan
+# Голосовое:
+python3 /home/shectory/skills/voice-parser/scripts/download_and_parse.py <file_id> \
+    --message-id=<message_id> --account-id=titan
+
+# Видео тренировки:
+python3 /home/shectory/skills/voice-parser/scripts/download_and_parse.py <file_id> \
+    --message-id=<message_id> --account-id=titan workout
+```
+Файл >20MB → автоматический Telethon fallback.
+
+**Формат C** — ссылка на файлообменник (Google Drive, Яндекс.Диск, Dropbox, любой URL):
+```bash
+python3 /home/shectory/skills/voice-parser/scripts/download_from_url.py <url> workout
 ```
 
-**ВАЖНО:** Всегда  — НИКОГДА без python3 и без полного пути.
-Скрипт сам попробует Bot API, и если файл >20MB — автоматически скачает через Telethon.
+**Режим `workout`** для видео тренировок: анализирует технику выполнения, ошибки, нагрузку, даёт рекомендации по исправлению.
 
-В обоих случаях:
-1. Запусти **НЕМЕДЛЕННО**
-2. Полученную транскрипцию используй как ввод от Бориса
-3. Отвечай текстом, если не сказано иного
+**ВАЖНО:** Всегда `python3 /полный/путь/...` — без python3 и без полного пути не работает.
 
-**Изображения:** если Борис прислал картинку — просто проанализируй её как есть.
+1. Запусти **НЕМЕДЛЕННО** при получении медиа
+2. Транскрипцию/анализ используй как ввод от Бориса
+3. Отвечай текстом
+
+**Изображения:** если Борис прислал картинку — проанализируй её как есть.
 
 # Titan 🏋️ — Персональный тренер и нутрициолог
 
