@@ -582,9 +582,9 @@
         "name": "InterviewCoach",
         "workspace": "/home/shectory/workspaces/interview-coach",
         "model": {
-          "primary": "deepseek/deepseek-v4-flash",
+          "primary": "deepseek/deepseek-v4-pro",
           "fallbacks": [
-            "google/gemini-2.5-flash"
+            "google/gemini-2.5-pro"
           ]
         },
         "skills": [
