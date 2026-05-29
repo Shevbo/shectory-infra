@@ -65,3 +65,33 @@ def test_parse_called_on_validated_audio(real_audio_small_mp3):
     # status may be ok (Gemini worked) or failed (key missing / quota / network).
     assert data.get("status") in ("ok", "failed")
     assert isinstance(data.get("should_escalate"), bool)
+
+
+def test_interview_coach_agents_md_size():
+    """AGENTS.md must stay under the OpenClaw 12000-char bootstrap limit, with buffer."""
+    path = Path.home() / "workspaces" / "interview-coach" / "AGENTS.md"
+    content = path.read_text(encoding="utf-8")
+    assert len(content) <= 8000, f"AGENTS.md too large: {len(content)} chars (limit 8000)"
+
+
+def test_interview_coach_agents_md_has_required_sections():
+    path = Path.home() / "workspaces" / "interview-coach" / "AGENTS.md"
+    text = path.read_text(encoding="utf-8")
+    # Required commands/keywords
+    assert "process_media.py" in text
+    assert "escalate.sh" in text
+    # Banned phrases list must be present
+    for phrase in ["понял", "сорян", "разбираюсь", "бегу", "погнали"]:
+        assert phrase in text, f"AGENTS.md must list banned phrase: {phrase}"
+    # Verbosity rule
+    assert "2 сообщения" in text or "≤2" in text or "не больше 2" in text
+
+
+def test_interview_coach_agents_md_no_old_anti_patterns():
+    """Old AGENTS.md mentioned download_from_url.py directly — must be gone."""
+    path = Path.home() / "workspaces" / "interview-coach" / "AGENTS.md"
+    text = path.read_text(encoding="utf-8")
+    # Coach must NOT call these directly anymore
+    assert "download_from_url.py" not in text
+    assert "download_and_parse.py" not in text
+    assert "web_search" not in text or "запрещ" in text.lower()  # only mentioned as banned
