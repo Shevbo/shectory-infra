@@ -95,9 +95,13 @@ def main() -> None:
             res.emit_and_exit()
 
         # Stage 2: download
+        # Redirect any print() from downloaders to stderr so stdout stays clean
+        # for the JSON contract Coach reads.
+        import contextlib
         out_dir = Path(args.out).expanduser() if args.out else INBOUND_DIR
         out_dir.mkdir(parents=True, exist_ok=True)
-        downloaded = download(res.provider, args.url_or_path, out_dir)
+        with contextlib.redirect_stdout(sys.stderr):
+            downloaded = download(res.provider, args.url_or_path, out_dir)
         res.file_path = str(downloaded)
         res.stage = "downloaded"
 
@@ -126,7 +130,8 @@ def main() -> None:
             res.emit_and_exit()
 
         try:
-            transcript = parse_voice.parse_audio(str(downloaded), prompt=args.mode)
+            with contextlib.redirect_stdout(sys.stderr):
+                transcript = parse_voice.parse_audio(str(downloaded), prompt=args.mode)
         except Exception as e:
             log.exception("parse_voice failed")
             res.reason = f"parse_voice error: {type(e).__name__}: {e}"
