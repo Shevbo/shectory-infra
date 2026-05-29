@@ -52,3 +52,16 @@ def test_local_real_audio_validates(real_audio_small_mp3):
     assert data["mime"].startswith("audio/")
     assert data["size_bytes"] > 100_000
     assert data["duration_seconds"] > 0
+
+
+def test_parse_called_on_validated_audio(real_audio_small_mp3):
+    """When --no-parse is omitted, parse_audio is called and result goes into JSON."""
+    code, data = _run(
+        [str(real_audio_small_mp3), "--mode=interview"],
+        timeout=60,
+    )
+    # Parse stage must actually run (not stop at validated).
+    assert data.get("stage") in ("parsed", "analyzed")
+    # status may be ok (Gemini worked) or failed (key missing / quota / network).
+    assert data.get("status") in ("ok", "failed")
+    assert isinstance(data.get("should_escalate"), bool)

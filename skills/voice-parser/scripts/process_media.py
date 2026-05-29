@@ -28,6 +28,7 @@ import argparse
 import json
 import logging
 import sys
+import uuid
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Optional
@@ -116,9 +117,38 @@ def main() -> None:
             res.status = "ok"
             res.emit_and_exit()
 
-        # parsing will be added in Task 7
-        res.reason = "parsing stage not yet implemented"
-        res.should_escalate = False
+        # Stage 4: parse via Gemini (import parse_voice as a module)
+        try:
+            import parse_voice
+        except ImportError as e:
+            res.reason = f"parse_voice import failed: {e}"
+            res.should_escalate = True
+            res.emit_and_exit()
+
+        try:
+            transcript = parse_voice.parse_audio(str(downloaded), prompt=args.mode)
+        except Exception as e:
+            log.exception("parse_voice failed")
+            res.reason = f"parse_voice error: {type(e).__name__}: {e}"
+            res.should_escalate = True
+            res.stage = "parsed"
+            res.emit_and_exit()
+
+        if not transcript or transcript.startswith("❌"):
+            res.reason = transcript or "empty transcript from Gemini"
+            res.should_escalate = True
+            res.stage = "parsed"
+            res.emit_and_exit()
+
+        # Stage 5: persist transcript
+        TRANSCRIPT_DIR.mkdir(parents=True, exist_ok=True)
+        uid = uuid.uuid4().hex[:12]
+        tpath = TRANSCRIPT_DIR / f"{uid}.md"
+        tpath.write_text(transcript, encoding="utf-8")
+        res.transcript_path = str(tpath)
+        res.summary = transcript[:200].replace("\n", " ").strip()
+        res.stage = "analyzed"
+        res.status = "ok"
         res.emit_and_exit()
 
     except FileNotFoundError as e:
