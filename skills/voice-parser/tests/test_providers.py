@@ -91,6 +91,65 @@ def test_gdrive_public_download_with_confirm_token(tmp_path):
     assert out.stat().st_size == len(audio_bytes)
 
 
+@responses.activate
+def test_gdrive_public_download_with_form_confirm(tmp_path):
+    """Modern GDrive returns a form (not <a>); parse action+inputs and POST."""
+    from providers import _download_gdrive_public
+
+    file_id = "1ABC"
+    audio_bytes = b"\x00ID3" + b"\x00" * 300_000
+
+    # First call returns HTML with form
+    form_html = (
+        '<html><body>'
+        '<form id="download-form" action="https://drive.usercontent.google.com/download" method="get">'
+        f'<input type="hidden" name="id" value="{file_id}">'
+        '<input type="hidden" name="export" value="download">'
+        '<input type="hidden" name="confirm" value="t">'
+        '<input type="hidden" name="uuid" value="abc-uuid">'
+        '</form></body></html>'
+    )
+    responses.add(
+        responses.GET, "https://drive.google.com/uc",
+        body=form_html, content_type="text/html",
+    )
+    # Second call to drive.usercontent.google.com returns the actual file
+    responses.add(
+        responses.GET, "https://drive.usercontent.google.com/download",
+        body=audio_bytes,
+        content_type="audio/mpeg",
+        headers={"Content-Disposition": 'attachment; filename="interview.mp3"'},
+    )
+
+    out = _download_gdrive_public(
+        f"https://drive.google.com/file/d/{file_id}/view",
+        tmp_path,
+    )
+    assert out.exists()
+    assert out.stat().st_size == len(audio_bytes)
+
+
+def test_parse_gdrive_confirm_form():
+    from providers import _parse_gdrive_confirm_form
+    html = (
+        '<form id="download-form" action="https://drive.usercontent.google.com/download" method="get">'
+        '<input type="hidden" name="id" value="ABC">'
+        '<input type="hidden" name="export" value="download">'
+        '<input type="hidden" name="confirm" value="t">'
+        '</form>'
+    )
+    action, params = _parse_gdrive_confirm_form(html)
+    assert action == "https://drive.usercontent.google.com/download"
+    assert params == {"id": "ABC", "export": "download", "confirm": "t"}
+
+
+def test_parse_gdrive_confirm_form_missing():
+    from providers import _parse_gdrive_confirm_form
+    action, params = _parse_gdrive_confirm_form("<html>no form</html>")
+    assert action is None
+    assert params == {}
+
+
 def test_gdrive_extract_id():
     from providers import _gdrive_file_id
     assert _gdrive_file_id("https://drive.google.com/file/d/1ABC/view?usp=drive_link") == "1ABC"

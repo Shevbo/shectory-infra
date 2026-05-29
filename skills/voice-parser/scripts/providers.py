@@ -49,6 +49,20 @@ def _gdrive_file_id(url: str) -> Optional[str]:
     return m.group(1) if m else None
 
 
+def _parse_gdrive_confirm_form(html: str) -> tuple[Optional[str], dict]:
+    """Extract action URL and hidden input params from GDrive's download-form."""
+    form_match = re.search(
+        r'<form[^>]*id="download-form"[^>]*action="([^"]+)"[^>]*>(.*?)</form>',
+        html, re.DOTALL,
+    )
+    if not form_match:
+        return None, {}
+    action = form_match.group(1).replace("&amp;", "&")
+    body = form_match.group(2)
+    inputs = re.findall(r'<input[^>]*name="([^"]+)"[^>]*value="([^"]*)"', body)
+    return action, dict(inputs)
+
+
 def _download_gdrive_public(url: str, out_dir: Path) -> Path:
     """Download a public Google Drive file via uc?export=download.
 
@@ -71,20 +85,27 @@ def _download_gdrive_public(url: str, out_dir: Path) -> Path:
                     stream=True, timeout=120, allow_redirects=True)
     r.raise_for_status()
 
-    # Large files: GDrive returns HTML with a confirmation link
+    # Large files: GDrive returns HTML with a confirmation form (modern) or link (legacy)
     ctype = r.headers.get("content-type", "")
     if "text/html" in ctype:
-        # Re-read body (small) to find confirm token
         body = r.content.decode("utf-8", errors="ignore")
-        m = re.search(r'href="(/uc\?[^"]*confirm=t[^"]*)"', body)
-        if m:
-            confirm_url = "https://drive.google.com" + m.group(1).replace("&amp;", "&")
-            r = session.get(confirm_url, proxies=proxies, stream=True, timeout=120, allow_redirects=True)
+        action, params2 = _parse_gdrive_confirm_form(body)
+        if action:
+            # Modern form-based confirm
+            r = session.get(action, params=params2, proxies=proxies,
+                            stream=True, timeout=300, allow_redirects=True)
             r.raise_for_status()
         else:
-            raise RuntimeError(
-                "GDrive returned HTML without confirm token — file may be private or require login"
-            )
+            # Fall back to old <a href="/uc?...confirm=t..."> check for any legacy responses
+            m = re.search(r'href="(/uc\?[^"]*confirm=t[^"]*)"', body)
+            if m:
+                confirm_url = "https://drive.google.com" + m.group(1).replace("&amp;", "&")
+                r = session.get(confirm_url, proxies=proxies, stream=True, timeout=120, allow_redirects=True)
+                r.raise_for_status()
+            else:
+                raise RuntimeError(
+                    "GDrive returned HTML without confirm token — file may be private or require login"
+                )
 
     # Determine output filename
     cd = r.headers.get("Content-Disposition", "")
