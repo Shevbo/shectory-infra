@@ -64,8 +64,17 @@ class Result:
     reason: Optional[str] = None
     should_escalate: bool = False
 
-    def emit_and_exit(self) -> None:
-        print(json.dumps(asdict(self), ensure_ascii=False))
+    def emit_and_exit(self, cache_path: Optional[Path] = None) -> None:
+        payload = json.dumps(asdict(self), ensure_ascii=False)
+        # Persist successful results (or terminal failures) to disk so a crashed
+        # parent (Coach session timeout) doesn't lose the result and re-spend
+        # tokens/bandwidth on the next attempt.
+        if cache_path is not None and self.status == "ok":
+            try:
+                cache_path.write_text(payload, encoding="utf-8")
+            except Exception:
+                pass
+        print(payload)
         sys.exit(0 if self.status == "ok" else 1)
 
 
@@ -86,13 +95,29 @@ def main() -> None:
     res = Result()
 
     # Single-flight lock: prevent multiple concurrent runs for the same URL
-    # (Coach LLM has duplicated "Запускаю разбор" 5× during gateway OOM-restarts,
-    # which spawned 5 parallel downloads of the same 200MB file.)
-    import fcntl, hashlib, contextlib
+    # (Coach LLM duplicates "Запускаю разбор" N× during gateway OOM-restarts,
+    # which would otherwise spawn N parallel downloads of the same 200MB file.)
+    import fcntl, hashlib, contextlib, time
     LOCK_DIR = Path.home() / ".cache" / "process-media-locks"
+    RESULT_DIR = Path.home() / ".cache" / "process-media-results"
     LOCK_DIR.mkdir(parents=True, exist_ok=True)
-    url_hash = hashlib.sha256(args.url_or_path.encode()).hexdigest()[:16]
+    RESULT_DIR.mkdir(parents=True, exist_ok=True)
+    url_hash = hashlib.sha256(f"{args.url_or_path}|{args.mode}".encode()).hexdigest()[:16]
+    result_path = RESULT_DIR / f"{url_hash}.json"
     lock_path = LOCK_DIR / f"{url_hash}.lock"
+
+    # Cache hit: identical URL+mode handled within last 24h → return cached result.
+    # Saves tokens (no Gemini call) and bandwidth (no re-download).
+    CACHE_TTL_SECONDS = 86400
+    if result_path.exists() and (time.time() - result_path.stat().st_mtime) < CACHE_TTL_SECONDS:
+        try:
+            cached = json.loads(result_path.read_text(encoding="utf-8"))
+            cached["_cached"] = True
+            print(json.dumps(cached, ensure_ascii=False))
+            sys.exit(0 if cached.get("status") == "ok" else 1)
+        except Exception:
+            pass  # corrupted cache — fall through to normal run
+
     lock_file = open(lock_path, "w")
     try:
         fcntl.flock(lock_file, fcntl.LOCK_EX | fcntl.LOCK_NB)
@@ -136,6 +161,8 @@ def main() -> None:
             res.emit_and_exit()
 
         # Stage 4: parse (skipped in --no-parse mode)
+        # --no-parse short-circuits before Gemini; do NOT cache (it would
+        # poison later full runs that expect a parsed transcript).
         if args.no_parse:
             res.status = "ok"
             res.emit_and_exit()
@@ -173,7 +200,7 @@ def main() -> None:
         res.summary = transcript[:200].replace("\n", " ").strip()
         res.stage = "analyzed"
         res.status = "ok"
-        res.emit_and_exit()
+        res.emit_and_exit(cache_path=result_path)
 
     except FileNotFoundError as e:
         log.exception("download/file error")
