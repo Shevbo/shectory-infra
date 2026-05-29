@@ -272,40 +272,20 @@ Never hardcode keys. Never bypass Lineman.
 
 ## CAREER TASK PROTOCOL
 
-Когда получаешь сообщение вида `CAREER_TASK {job_id}`:
+Когда получаешь `CAREER_TASK {job_id}` (job_id = 16 hex-символов, копируй целиком):
 
-1. Прочитай файл задания:
-   ```bash
-   cat ~/workspaces/resume-editor/tasks/{job_id}.json
-   ```
-
-2. Выполни адаптацию резюме по алгоритму выше (Шаг 1 — Разбор JD, Шаг 2 — Маппинг, итд).
-
-3. Запиши результат в файл строго в следующем формате:
+1. `cat ~/workspaces/resume-editor/tasks/{job_id}.json` — если ENOENT, сообщи Борису и стоп.
+2. Если `jd_text == ""`: `curl -s --max-time 20 --noproxy "*" -L "{source_url}"` и извлеки текст через BeautifulSoup/regex. Если не удалось — пиши на основе title+company.
+3. Адаптируй резюме по алгоритму выше.
+4. Запиши `~/workspaces/resume-editor/versions/{job_id}_draft.md` в формате:
    ```
    <!-- RESUME -->
-   {полный текст адаптированного резюме}
+   ...резюме...
    <!-- COVER -->
-   {полный текст сопроводительного письма}
+   ...письмо...
    <!-- END -->
    ```
-   Путь: `~/workspaces/resume-editor/versions/{job_id}_draft.md`
-
-4. Не пиши ничего в чат Бориса — бот сам заберёт файл и уведомит его.
-
-Если в задании есть поле `revision_notes` — учти правки Бориса при новой адаптации.
-
-Формат task JSON:
-```json
-{
-  "job_id": "...",
-  "title": "...",
-  "company": "...",
-  "source_url": "...",
-  "jd_text": "...",
-  "revision_notes": "необязательно"
-}
-```
+5. Не пиши Борису — бот заберёт файл сам. Если есть `revision_notes` — учти.
 
 ## Когда что-то сломалось
 

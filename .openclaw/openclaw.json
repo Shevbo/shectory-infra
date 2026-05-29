@@ -547,9 +547,9 @@
         "name": "ResumePro",
         "workspace": "/home/shectory/workspaces/resume-editor",
         "model": {
-          "primary": "deepseek/deepseek-v4-flash",
+          "primary": "google/gemini-2.5-flash",
           "fallbacks": [
-            "google/gemini-2.5-flash"
+            "google/gemini-2.5-pro"
           ]
         },
         "skills": [
