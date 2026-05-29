@@ -85,6 +85,26 @@ def main() -> None:
 
     res = Result()
 
+    # Single-flight lock: prevent multiple concurrent runs for the same URL
+    # (Coach LLM has duplicated "Запускаю разбор" 5× during gateway OOM-restarts,
+    # which spawned 5 parallel downloads of the same 200MB file.)
+    import fcntl, hashlib, contextlib
+    LOCK_DIR = Path.home() / ".cache" / "process-media-locks"
+    LOCK_DIR.mkdir(parents=True, exist_ok=True)
+    url_hash = hashlib.sha256(args.url_or_path.encode()).hexdigest()[:16]
+    lock_path = LOCK_DIR / f"{url_hash}.lock"
+    lock_file = open(lock_path, "w")
+    try:
+        fcntl.flock(lock_file, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except BlockingIOError:
+        Result(
+            status="failed",
+            stage="init",
+            provider=detect_provider(args.url_or_path),
+            reason=f"another process_media.py is already handling this URL (lock {lock_path.name})",
+            should_escalate=False,
+        ).emit_and_exit()
+
     try:
         # Stage 1: detect
         res.provider = detect_provider(args.url_or_path)
@@ -97,7 +117,6 @@ def main() -> None:
         # Stage 2: download
         # Redirect any print() from downloaders to stderr so stdout stays clean
         # for the JSON contract Coach reads.
-        import contextlib
         out_dir = Path(args.out).expanduser() if args.out else INBOUND_DIR
         out_dir.mkdir(parents=True, exist_ok=True)
         with contextlib.redirect_stdout(sys.stderr):
