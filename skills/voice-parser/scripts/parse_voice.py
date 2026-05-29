@@ -23,7 +23,7 @@ import sys, os, base64, json, requests, glob, time, uuid
 from datetime import datetime
 
 CONFIG_PATH = os.path.expanduser("~/.openclaw/openclaw.json")
-FILE_SIZE_THRESHOLD = 19 * 1024 * 1024  # 19MB — inline limit
+FILE_SIZE_THRESHOLD = 15 * 1024 * 1024  # 15MB — go through File API earlier to avoid connection resets on borderline inline payloads
 LINEMAN = os.environ.get("LINEMAN_URL", "http://127.0.0.1:9090")
 
 # Video formats always go through File API (Gemini video understanding)

@@ -27,6 +27,7 @@ Exit code: 0 on status=ok, non-zero on failed.
 import argparse
 import json
 import logging
+import subprocess
 import sys
 import uuid
 from dataclasses import asdict, dataclass
@@ -108,8 +109,10 @@ def main() -> None:
 
     # Cache hit: identical URL+mode handled within last 24h → return cached result.
     # Saves tokens (no Gemini call) and bandwidth (no re-download).
+    # Skip cache for --no-parse (diagnostic mode that should always re-run).
     CACHE_TTL_SECONDS = 86400
-    if result_path.exists() and (time.time() - result_path.stat().st_mtime) < CACHE_TTL_SECONDS:
+    if (not args.no_parse) and result_path.exists() and \
+            (time.time() - result_path.stat().st_mtime) < CACHE_TTL_SECONDS:
         try:
             cached = json.loads(result_path.read_text(encoding="utf-8"))
             cached["_cached"] = True
@@ -167,6 +170,40 @@ def main() -> None:
             res.status = "ok"
             res.emit_and_exit()
 
+        # Stage 3.5: if input is video — extract audio track via ffmpeg.
+        # Gemini video analysis offers near-zero value for interview coaching
+        # (vague "looked calm" output) and balloons input size 15-20×.
+        # Audio carries 95% of coaching value (content, pacing, STAR usage).
+        parse_input_path = Path(downloaded)
+        if res.mime.startswith("video/"):
+            audio_out = parse_input_path.with_suffix(".extracted.mp3")
+            log.info("extracting audio track: %s -> %s", parse_input_path, audio_out)
+            try:
+                with contextlib.redirect_stdout(sys.stderr):
+                    print(f"🎬→🎵 Extracting audio from {parse_input_path.name} ({res.size_bytes // (1024*1024)} MB)...",
+                          file=sys.stderr)
+                ff = subprocess.run(
+                    ["ffmpeg", "-y", "-loglevel", "error",
+                     "-i", str(parse_input_path),
+                     "-vn", "-acodec", "libmp3lame", "-b:a", "96k",
+                     str(audio_out)],
+                    capture_output=True, text=True, timeout=600,
+                )
+                if ff.returncode != 0:
+                    res.reason = f"ffmpeg audio-extract failed: {ff.stderr[:300]}"
+                    res.should_escalate = True
+                    res.emit_and_exit()
+                if not audio_out.exists() or audio_out.stat().st_size < 1000:
+                    res.reason = "ffmpeg produced empty audio track"
+                    res.should_escalate = True
+                    res.emit_and_exit()
+                parse_input_path = audio_out
+                log.info("audio extracted: %s (%s bytes)", audio_out, audio_out.stat().st_size)
+            except subprocess.TimeoutExpired:
+                res.reason = "ffmpeg audio-extract timed out (>10 min)"
+                res.should_escalate = True
+                res.emit_and_exit()
+
         # Stage 4: parse via Gemini (import parse_voice as a module)
         try:
             import parse_voice
@@ -177,7 +214,7 @@ def main() -> None:
 
         try:
             with contextlib.redirect_stdout(sys.stderr):
-                transcript = parse_voice.parse_audio(str(downloaded), prompt=args.mode)
+                transcript = parse_voice.parse_audio(str(parse_input_path), prompt=args.mode)
         except Exception as e:
             log.exception("parse_voice failed")
             res.reason = f"parse_voice error: {type(e).__name__}: {e}"
@@ -187,6 +224,23 @@ def main() -> None:
 
         if not transcript or transcript.startswith("❌"):
             res.reason = transcript or "empty transcript from Gemini"
+            res.should_escalate = True
+            res.stage = "parsed"
+            res.emit_and_exit()
+
+        # parse_voice may write error strings like "Все модели не ответили..." without ❌ prefix
+        # — these are failures dressed as success. Detect and reclassify.
+        TRANSCRIPT_ERROR_MARKERS = (
+            "Все модели не ответили",
+            "Connection reset by peer",
+            "Connection aborted",
+            "Gemini API key not found",
+            "File API error",
+            "API key was reported as leaked",
+            "❌ ",  # any error block emitted by parse_voice
+        )
+        if any(marker in transcript for marker in TRANSCRIPT_ERROR_MARKERS):
+            res.reason = f"Gemini transcription failed: {transcript[-300:]}"
             res.should_escalate = True
             res.stage = "parsed"
             res.emit_and_exit()
