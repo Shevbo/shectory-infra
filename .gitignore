@@ -1,0 +1,9 @@
+
+# Secrets — never commit (managed by Keymaster, lives only in ~/.openclaw/openclaw.json locally)
+.openclaw/openclaw.json
+.keymaster/credentials/
+.keymaster/manifest.json
+.keymaster/audit.log
+.keymaster/delivery/
+.openclaw/credentials/*
+!.openclaw/credentials/*.example
