@@ -33,7 +33,7 @@ def _ffprobe_duration(path: Path) -> float:
             capture_output=True, text=True, timeout=10,
         )
         return float(r.stdout.strip() or 0.0)
-    except (subprocess.SubprocessError, ValueError):
+    except (subprocess.SubprocessError, FileNotFoundError, ValueError):
         return 0.0
 
 
@@ -41,6 +41,9 @@ def validate_media(path: Path) -> ValidationResult:
     """Validate that the file is a real audio/video file >= 100 KB and >= 30s."""
     if not path.exists():
         return ValidationResult(ok=False, reason=f"file not found: {path}", should_escalate=True)
+
+    if not path.is_file():
+        return ValidationResult(ok=False, reason=f"not a regular file: {path}", should_escalate=True)
 
     size = path.stat().st_size
     mime = magic.from_file(str(path), mime=True) or ""
