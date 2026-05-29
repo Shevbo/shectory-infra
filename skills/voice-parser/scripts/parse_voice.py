@@ -186,13 +186,20 @@ def upload_to_file_api(api_key, audio_path, mime):
     return file_uri
 
 
-def _wait_for_file_active(api_key, file_name, timeout=30):
+def _wait_for_file_active(api_key, file_name, timeout=120):
+    """Poll Google File API until state == ACTIVE.
+
+    Note: GET /v1beta/{file_name} returns the file object directly (no `file`
+    wrapper), unlike POST upload response which uses `{"file": {...}}`.
+    We check both shapes for safety.
+    """
     deadline = time.time() + timeout
     while time.time() < deadline:
         url = f"{LINEMAN}/proxy/google/v1beta/{file_name}?key={api_key}"
         try:
             r = requests.get(url, timeout=10)
-            state = r.json().get("file", {}).get("state", "")
+            body = r.json()
+            state = body.get("state") or body.get("file", {}).get("state", "")
             if state == "ACTIVE":
                 return
             if state == "FAILED":
