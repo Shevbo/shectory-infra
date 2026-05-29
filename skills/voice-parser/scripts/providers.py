@@ -6,8 +6,12 @@ Public API:
 
 Providers: gdrive, mailru, yadisk, dropbox, onedrive, telegram, direct, local, unknown
 """
+import os
 import re
 from pathlib import Path
+from typing import Optional
+
+import requests
 
 
 def detect_provider(url_or_path: str) -> str:
@@ -37,11 +41,6 @@ def detect_provider(url_or_path: str) -> str:
         return "onedrive"
 
     return "direct"
-
-
-import os
-from typing import Optional
-import requests
 
 
 def _gdrive_file_id(url: str) -> Optional[str]:
@@ -102,3 +101,57 @@ def _download_gdrive_public(url: str, out_dir: Path) -> Path:
                 f.write(chunk)
 
     return out_path
+
+
+def download(provider: str, url_or_marker: str, out_dir: Path) -> Path:
+    """Dispatch download to the right provider handler.
+
+    For `local` and `telegram` with `[media attached:`, returns the path as-is.
+    For all URL providers, downloads to out_dir and returns the saved file path.
+    Raises ValueError for unsupported/empty providers.
+    """
+    if provider == "local":
+        p = Path(url_or_marker).expanduser()
+        if not p.exists():
+            raise FileNotFoundError(f"local path does not exist: {p}")
+        return p
+
+    if provider == "telegram":
+        m = re.search(r"\[media attached:\s*([^\]]+)\]", url_or_marker)
+        if m:
+            p = Path(m.group(1).strip()).expanduser()
+            if not p.exists():
+                raise FileNotFoundError(f"telegram media file not found: {p}")
+            return p
+        raise ValueError(
+            "telegram provider needs the file pre-downloaded "
+            "(use download_and_parse.py for file_id flow)"
+        )
+
+    if provider == "gdrive":
+        return _download_gdrive_public(url_or_marker, out_dir)
+
+    # Reuse existing downloaders from download_from_url.py for mailru/yadisk/dropbox/onedrive/direct
+    if provider in ("mailru", "yadisk", "dropbox", "onedrive", "direct"):
+        # Import lazily to avoid circular deps and speed up unit tests
+        import importlib.util
+        spec = importlib.util.spec_from_file_location(
+            "_dlu",
+            str(Path(__file__).parent / "download_from_url.py"),
+        )
+        dlu = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(dlu)
+
+        if provider == "mailru":
+            return dlu._download_mailru(url_or_marker, out_dir)
+        if provider == "yadisk":
+            direct_url = dlu._yadisk_direct_url(url_or_marker)
+            return dlu._wget_download(direct_url, out_dir)
+        if provider == "dropbox":
+            return dlu._wget_download(dlu._dropbox_direct(url_or_marker), out_dir)
+        if provider == "onedrive":
+            return dlu._wget_download(url_or_marker, out_dir)
+        if provider == "direct":
+            return dlu._wget_download(url_or_marker, out_dir)
+
+    raise ValueError(f"unsupported provider: {provider!r}")

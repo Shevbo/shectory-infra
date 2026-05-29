@@ -97,3 +97,33 @@ def test_gdrive_extract_id():
     assert _gdrive_file_id("https://drive.google.com/open?id=2XYZ") == "2XYZ"
     assert _gdrive_file_id("https://drive.google.com/uc?id=3DEF&export=download") == "3DEF"
     assert _gdrive_file_id("https://example.com/no-id") is None
+
+
+def test_download_dispatches_to_local(tmp_path, real_audio_small_mp3):
+    from providers import download
+    out = download("local", str(real_audio_small_mp3), tmp_path)
+    # local provider returns the original path as-is (no copy)
+    assert out == real_audio_small_mp3
+
+
+def test_download_unknown_raises(tmp_path):
+    from providers import download
+    import pytest
+    with pytest.raises(ValueError, match="unsupported"):
+        download("unknown", "garbage", tmp_path)
+
+
+def test_download_telegram_raises_when_no_path(tmp_path):
+    """telegram provider requires a pre-extracted local path passed via brackets."""
+    from providers import download
+    import pytest
+    with pytest.raises(ValueError, match="telegram"):
+        download("telegram", "[file_id:ABC]", tmp_path)
+
+
+def test_download_telegram_with_media_attached(tmp_path, real_audio_small_mp3):
+    """`[media attached: /path]` syntax → returns that path."""
+    from providers import download
+    marker = f"[media attached: {real_audio_small_mp3}]"
+    out = download("telegram", marker, tmp_path)
+    assert out == real_audio_small_mp3
