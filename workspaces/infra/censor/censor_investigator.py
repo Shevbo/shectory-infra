@@ -214,10 +214,17 @@ def main() -> None:
 
     bodies = fetch_request_bodies(args.agent, args.since)
     print(f"[investigator] {len(bodies)} bodies, collecting configs...")
-    configs = collect_configs()
 
+    # Early-exit: без bodies нечего показать Opus, плюс пустой ответ ломал парсер
+    # и спамил Telegram (429 rate limit). Watchdog не получит patches, но и не
+    # потеряет ничего полезного — нет данных, нет анализа.
+    if not bodies:
+        print("[investigator] no request bodies — skip Opus call (early-exit)")
+        return
+
+    configs = collect_configs()
     prompt = build_opus_prompt(args.agent, args.since, bodies, configs)
-    print("[investigator] calling Opus...")
+    print("[investigator] calling Opus via Lineman rproxy...")
     raw = call_opus(prompt)
     analysis = parse_opus_response(raw)
 
