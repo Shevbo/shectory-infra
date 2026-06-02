@@ -136,9 +136,16 @@ SYSTEM_PROMPT = """Ты — аналитик эффективности LLM-аг
 Секции: ## Патологии | ## Рекомендации | ## Итог"""
 
 
+CENSOR_LLM_URL = "http://127.0.0.1:9090/proxy/deepseek/v1/chat/completions"
+
+
 def call_deepseek(api_key: str, agg: dict) -> str:
+    # deepseek-v4-flash достаточен для агрегационного анализа лога — ровно в 3 раза
+    # дешевле deepseek-v4-pro при сопоставимом качестве для structured input.
+    # Идёт через Lineman reverse-proxy: даёт source_agent='censor' в request_log,
+    # маскирование Authorization, токены/цена в дашборд.
     payload = {
-        "model": "deepseek-v4-pro",
+        "model": "deepseek-v4-flash",
         "messages": [
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": f"```json\n{json.dumps(agg, ensure_ascii=False, indent=2)}\n```"},
@@ -148,11 +155,12 @@ def call_deepseek(api_key: str, agg: dict) -> str:
     }
     data = json.dumps(payload).encode()
     req = urllib.request.Request(
-        DEEPSEEK_CHAT_URL,
+        CENSOR_LLM_URL,
         data=data,
         headers={
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
+            "X-Agent-Name": "censor",
         },
         method="POST",
     )
@@ -247,12 +255,25 @@ def main() -> None:
 
     agg = aggregate(rows)
 
+    # Early-exit: если в окне ничего «жирного» нет — LLM не дёргаем.
+    # Триггеры: огромный context, retry-петля, рост сессии, аномальные ошибки.
+    has_signal = False
+    for a in (agg.get("agents") or {}).values():
+        if a.get("high_retry_count") or a.get("high_growth_events") or \
+           a.get("max_session_tokens_1h", 0) > SESSION_TOKENS_WARN or \
+           a.get("tokens_in", 0) > 200_000:
+            has_signal = True
+            break
+    if not has_signal:
+        print("[censor-analyzer] no anomalies in window — skip LLM call (early-exit)")
+        return
+
     api_key = get_deepseek_key()
     if not api_key:
         print("[censor-analyzer] DEEPSEEK key not found", file=sys.stderr)
         analysis = "[no API key]"
     else:
-        print("[censor-analyzer] calling DeepSeek Pro...")
+        print("[censor-analyzer] anomalies detected — calling DeepSeek flash via Lineman rproxy")
         analysis = call_deepseek(api_key, agg)
 
     report_path = save_report(now, agg, analysis)

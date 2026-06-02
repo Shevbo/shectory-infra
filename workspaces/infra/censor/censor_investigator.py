@@ -156,13 +156,26 @@ If no safe clear fix exists, return patches: []. Only reference files visible in
 
 
 def call_opus(prompt: str) -> str:
+    # Direct Claude CLI to Lineman reverse-proxy so the Opus call is logged
+    # in request_log (tokens, latency, masked Authorization). Without this,
+    # CLI uses HTTPS_PROXY (CONNECT tunnel) and Lineman cannot see body —
+    # see lineman docs/REPORT_2026-05-29.md "connect_tunnel_llm_flagged".
+    sub_env = {
+        **os.environ,
+        "CLAUDE_CODE_SIMPLE": "1",
+        "ANTHROPIC_BASE_URL": "http://10.66.0.1:9090/proxy/anthropic",
+    }
+    # Drop HTTPS_PROXY so the CLI talks to Lineman directly over WG, not via tunnel.
+    sub_env.pop("HTTPS_PROXY", None)
+    sub_env.pop("HTTP_PROXY", None)
+    sub_env["NO_PROXY"] = "10.66.0.1,127.0.0.1,localhost"
     result = subprocess.run(
         [CLAUDE_BIN, "--model", "claude-opus-4-7", "--print", "--bare"],
         input=prompt,
         capture_output=True,
         text=True,
         timeout=120,
-        env={**os.environ, "CLAUDE_CODE_SIMPLE": "1"},
+        env=sub_env,
     )
     if result.returncode != 0:
         print(f"[investigator] claude stderr: {result.stderr[:300]}", file=sys.stderr)
