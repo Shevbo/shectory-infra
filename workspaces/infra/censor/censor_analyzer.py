@@ -136,21 +136,24 @@ SYSTEM_PROMPT = """Ты — аналитик эффективности LLM-аг
 Секции: ## Патологии | ## Рекомендации | ## Итог"""
 
 
-CENSOR_LLM_URL = "http://127.0.0.1:9090/proxy/deepseek/v1/chat/completions"
+CENSOR_LLM_URL   = "http://127.0.0.1:9090/proxy/ollama-hoster/v1/chat/completions"
+CENSOR_LLM_MODEL = "llama3.2:1b"
+CENSOR_LLM_TIMEOUT = 120  # ollama 1B на hoster CPU может быть медленнее cloud
 
 
 def call_deepseek(api_key: str, agg: dict) -> str:
-    # deepseek-v4-flash достаточен для агрегационного анализа лога — ровно в 3 раза
-    # дешевле deepseek-v4-pro при сопоставимом качестве для structured input.
-    # Идёт через Lineman reverse-proxy: даёт source_agent='censor' в request_log,
-    # маскирование Authorization, токены/цена в дашборд.
+    # Перевод на local Ollama (llama3.2:1b на hoster) — ноль токенов/денег.
+    # Запрос всё равно идёт через Lineman reverse-proxy для visibility:
+    # source_agent='censor' в request_log + dashboard, маскирование headers.
+    # llama3.2:1b справляется со structured-JSON анализом, fallback на DeepSeek-flash
+    # делаем при сетевой ошибке (ollama-hoster down, например модель не загружена).
     payload = {
-        "model": "deepseek-v4-flash",
+        "model": CENSOR_LLM_MODEL,
         "messages": [
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": f"```json\n{json.dumps(agg, ensure_ascii=False, indent=2)}\n```"},
         ],
-        "max_tokens": 1024,
+        "max_tokens": 800,
         "temperature": 0.3,
     }
     data = json.dumps(payload).encode()
@@ -158,18 +161,37 @@ def call_deepseek(api_key: str, agg: dict) -> str:
         CENSOR_LLM_URL,
         data=data,
         headers={
-            "Authorization": f"Bearer {api_key}",
+            "Authorization": f"Bearer {api_key or 'local'}",
             "Content-Type": "application/json",
             "X-Agent-Name": "censor",
         },
         method="POST",
     )
     try:
-        with urllib.request.urlopen(req, timeout=60) as resp:
+        with urllib.request.urlopen(req, timeout=CENSOR_LLM_TIMEOUT) as resp:
             body = json.loads(resp.read())
             return body["choices"][0]["message"]["content"]
     except Exception as exc:
-        return f"[DeepSeek error: {exc}]"
+        # Fallback: попробовать DeepSeek-flash через rproxy.
+        # Если и он не сработает — вернуть ошибку для отчёта.
+        try:
+            payload["model"] = "deepseek-v4-flash"
+            payload["max_tokens"] = 1024
+            req = urllib.request.Request(
+                "http://127.0.0.1:9090/proxy/deepseek/v1/chat/completions",
+                data=json.dumps(payload).encode(),
+                headers={
+                    "Authorization": f"Bearer {api_key}",
+                    "Content-Type": "application/json",
+                    "X-Agent-Name": "censor",
+                },
+                method="POST",
+            )
+            with urllib.request.urlopen(req, timeout=60) as resp:
+                body = json.loads(resp.read())
+                return f"[fallback: DeepSeek-flash] {body['choices'][0]['message']['content']}"
+        except Exception as exc2:
+            return f"[Ollama error: {exc}] [DeepSeek fallback failed: {exc2}]"
 
 
 def save_report(ts: datetime, agg: dict, analysis: str) -> Path:
@@ -273,7 +295,7 @@ def main() -> None:
         print("[censor-analyzer] DEEPSEEK key not found", file=sys.stderr)
         analysis = "[no API key]"
     else:
-        print("[censor-analyzer] anomalies detected — calling DeepSeek flash via Lineman rproxy")
+        print(f"[censor-analyzer] anomalies detected — calling {CENSOR_LLM_MODEL} via Lineman rproxy")
         analysis = call_deepseek(api_key, agg)
 
     report_path = save_report(now, agg, analysis)
