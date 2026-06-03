@@ -83,13 +83,16 @@ sessions_send(sessionKey, "Задача в инбоксе: TASK_1744819200.md")
 | `gemma-4-26b-a4b-it-imatrix` | Суммаризация, HTML, длинный контекст |
 | `deepseek-r1-distill-qwen-14b` | Рассуждения, сложный анализ |
 
-**Единый эндпоинт для всех узлов** (Lineman сам разруливает маршрут через Pi → hyperv):
+**Два пути в зависимости от расположения:**
 
-| Узел | URL |
-|------|-----|
-| smain | `http://127.0.0.1:9090/proxy/lm-studio/v1/chat/completions` |
-| sdev, hoster, pi, cloud | `http://10.66.0.1:9090/proxy/lm-studio/v1/chat/completions` |
-| **vibe (Windows)** | `http://127.0.0.1:19090/proxy/lm-studio/v1/chat/completions` |
+| Узел | Путь | URL |
+|------|------|-----|
+| **sdev, vibe, VS Code Claude** | прямой LAN (быстрее) | `http://192.168.1.70:1234/v1/chat/completions` |
+| smain | через Lineman (туннель smain→Pi→hyperv) | `http://127.0.0.1:9090/proxy/lm-studio/v1/chat/completions` |
+| hoster, pi, cloud | через Lineman по WG | `http://10.66.0.1:9090/proxy/lm-studio/v1/chat/completions` |
+
+HyperV-local VM (sdev, vibe, VS Code) не нужен WG-туннель: `192.168.1.70:1234` в той же подсети.
+Для LM Studio API-ключ не нужен — `Authorization: Bearer local` (или вообще без).
 
 **Доступность:** LM Studio работает пока hyperv включён. Если `502` — hyperv выключен. Lazy Queue автоматически фолбэкнет на Ollama@hoster или DeepSeek-flash.
 
@@ -410,8 +413,8 @@ Windows 10/11. OpenClaw node.
 - **Важно:** использовать `--noproxy "*"` чтобы обойти прокси-конфиг openclaw
 
 **LM Studio с vibe:**
-- `POST http://127.0.0.1:19090/proxy/lm-studio/v1/chat/completions` (через reverse tunnel к Lineman)
-- Модель: `gemma-4-e4b-it`. Lineman сам роутит через Pi → hyperv.
+- `POST http://192.168.1.70:1234/v1/chat/completions` — прямой LAN (vibe в той же подсети, что hyperv)
+- Модель: `gemma-4-e4b-it`. Через Lineman не нужно — это лишний крюк через smain.
 
 **Секреты для VBoris2:**
 - Keymaster API: `http://127.0.0.1:19090/api/agent/keymaster/message?from=virtual-boris-vibe&message=...`
