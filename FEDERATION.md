@@ -77,15 +77,19 @@ sessions_send(sessionKey, "Задача в инбоксе: TASK_1744819200.md")
 
 **Приоритет выше платных.** Используй локальные модели по умолчанию для задач, которые не требуют точности уровня GPT-4o.
 
-| Модель | Эндпоинт (через Lineman) | Эндпоинт (vibe прямой) | Задачи |
-|--------|--------------------------|------------------------|--------|
-| `gemma-4-e4b-it` | `/proxy/lm-studio/v1/chat/completions` | `http://192.168.1.70:1234/v1/...` | OCR, vision, быстрые вопросы |
-| `gemma-4-26b-a4b-it-imatrix` | то же | то же | Суммаризация, HTML, длинный контекст |
-| `deepseek-r1-distill-qwen-14b` | то же | то же | Рассуждения, сложный анализ |
+| Модель | Задачи |
+|--------|--------|
+| `gemma-4-e4b-it` | OCR, vision, распознавание картинок |
+| `gemma-4-26b-a4b-it-imatrix` | Суммаризация, HTML, длинный контекст |
+| `deepseek-r1-distill-qwen-14b` | Рассуждения, сложный анализ |
 
-**Адреса:**
-- Все узлы (smain, sdev, hoster, pi): `http://10.66.0.1:9090/proxy/lm-studio/v1/...`
-- **vibe (Windows)** — прямой LAN: `http://192.168.1.70:1234/v1/...` (CCR_LMSTUDIO_URL из keymaster, быстрее)
+**Единый эндпоинт для всех узлов** (Lineman сам разруливает маршрут через Pi → hyperv):
+
+| Узел | URL |
+|------|-----|
+| smain | `http://127.0.0.1:9090/proxy/lm-studio/v1/chat/completions` |
+| sdev, hoster, pi, cloud | `http://10.66.0.1:9090/proxy/lm-studio/v1/chat/completions` |
+| **vibe (Windows)** | `http://127.0.0.1:19090/proxy/lm-studio/v1/chat/completions` |
 
 **Доступность:** LM Studio работает пока hyperv включён. Если `502` — hyperv выключен. Lazy Queue автоматически фолбэкнет на Ollama@hoster или DeepSeek-flash.
 
@@ -405,11 +409,9 @@ Windows 10/11. OpenClaw node.
 - Пример: `curl --noproxy "*" "http://127.0.0.1:19090/api/agent/keymaster/message?from=virtual-boris-vibe&message=ping"`
 - **Важно:** использовать `--noproxy "*"` чтобы обойти прокси-конфиг openclaw
 
-**LM Studio — прямой LAN-доступ с vibe (быстрее, чем через Lineman):**
-- URL: `http://192.168.1.70:1234` (секрет `CCR_LMSTUDIO_URL` в keymaster)
-- Модель OCR/vision: `gemma-4-e4b-it`
-- Пример: `POST http://192.168.1.70:1234/v1/chat/completions` с `Authorization: Bearer local`
-- Если hyperv выключен — фолбэк через `http://127.0.0.1:19090/proxy/lm-studio/...`
+**LM Studio с vibe:**
+- `POST http://127.0.0.1:19090/proxy/lm-studio/v1/chat/completions` (через reverse tunnel к Lineman)
+- Модель: `gemma-4-e4b-it`. Lineman сам роутит через Pi → hyperv.
 
 **Секреты для VBoris2:**
 - Keymaster API: `http://127.0.0.1:19090/api/agent/keymaster/message?from=virtual-boris-vibe&message=...`
