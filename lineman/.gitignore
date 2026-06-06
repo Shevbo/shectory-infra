@@ -1,9 +1,0 @@
-config.json
-*.db
-*.db-shm
-*.db-wal
-state.json
-harvester_state.json
-metrics.json
-__pycache__/
-.venv/
