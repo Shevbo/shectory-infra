@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { runAgentPrompt } from "@/lib/agent";
+import { askLLM } from "@/lib/llm";
 import { adminAuthOk } from "@/lib/admin-auth";
+
+// Сколько последних сообщений сессии подаём как контекст диалога.
+const HISTORY_LIMIT = 12;
 
 export async function POST(req: Request) {
   if (!(await adminAuthOk())) {
@@ -26,23 +29,75 @@ export async function POST(req: Request) {
   });
   if (!session) return NextResponse.json({ error: "Session not found" }, { status: 404 });
 
+  const history = await prisma.chatMessage.findMany({
+    where: { sessionId },
+    orderBy: { createdAt: "desc" },
+    take: HISTORY_LIMIT,
+  });
+  history.reverse();
+
   const userMsg = await prisma.chatMessage.create({
     data: { sessionId, role: "user", content: message.trim() },
   });
 
-  const { ok, stdout, stderr } = await runAgentPrompt(project.workspacePath, message.trim());
+  const prompt = buildPrompt(
+    {
+      name: project.name,
+      description: project.description,
+      aiContext: project.aiContext,
+      workspacePath: project.workspacePath,
+    },
+    history,
+    message.trim()
+  );
+
+  const res = await askLLM(prompt);
   const reply =
-    (ok ? stdout : stderr || stdout).trim() ||
-    "(пустой ответ agent; проверьте CURSOR_API_KEY и путь workspace)";
+    (res.ok ? res.text : "").trim() ||
+    `(LLM не ответил${res.error ? `: ${res.error}` : ""}. Проверьте Lineman /api/klod/ask на :9090)`;
 
   const assistantMsg = await prisma.chatMessage.create({
     data: { sessionId, role: "assistant", content: reply },
   });
 
   return NextResponse.json({
-    ok,
+    ok: res.ok,
     reply,
+    model: res.model,
+    provider: res.provider,
     userMsg,
     assistantMsg,
   });
+}
+
+function buildPrompt(
+  project: { name: string; description: string; aiContext: string; workspacePath: string },
+  history: { role: string; content: string }[],
+  latest: string
+): string {
+  const sys = [
+    `Ты технический ассистент платформы Shectory. Отвечаешь по проекту «${project.name}».`,
+    `Рабочий каталог проекта: ${project.workspacePath}.`,
+    `Отвечай на русском, по делу, без воды. Если данных недостаточно — скажи об этом.`,
+    "",
+    "## Описание проекта",
+    project.description || "(нет)",
+    "",
+    "## Контекст для ИИ (архитектура / инженерия)",
+    project.aiContext || "(нет)",
+  ].join("\n");
+
+  const dialog = history
+    .filter((m) => m.content.trim())
+    .map((m) => `${m.role === "user" ? "Пользователь" : "Ассистент"}: ${m.content}`)
+    .join("\n");
+
+  return [
+    sys,
+    "",
+    "## Диалог",
+    dialog || "(начало диалога)",
+    `Пользователь: ${latest}`,
+    "Ассистент:",
+  ].join("\n");
 }
