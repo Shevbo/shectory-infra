@@ -257,11 +257,17 @@ NOTE: `SHECTORY_PROJECT_SLUG` должен прокидываться в окр�
 - cursor_cli/gemini_api/lineman ветки не сломаны.
 - Backup openclaw.json перед записью; atomic rename.
 
+## Подтверждено по docs.openclaw.ai (2026-06-19)
+- **Hot-reload**: gateway.reload по умолчанию `hybrid` — изменения `agents` (включая agents.list) применяются БЕЗ рестарта. Писать openclaw.json достаточно, рестарт gateway не нужен. (Закрывает бывший вопрос про hot-reload.)
+- **model** у list-агента принимает объект `{primary, fallbacks}` или строку `"provider/model"`. Наш upsert пишет объект — валидно.
+- **workspace** = default cwd агента (не жёсткий sandbox); привязка пер-агент, per-call `--workspace` отсутствует → per-project агент обязателен.
+- **agentDir** по умолчанию `~/.openclaw/agents/<id>/agent` (изолирован) — НЕ задаём, берётся дефолт.
+- **Binding НЕ нужен**: bindings только для входящих каналов (telegram и т.п.). Мы зовём `openclaw agent --agent <id>` напрямую → достаточно записи в agents.list.
+- Формат провайдера: `google/...`, `deepseek/...` (docs: `anthropic/claude-sonnet-4-6`, `openai/gpt-5.4`). modelIdToLinemanTarget (gemini→google) совпадает.
+
 ## Открытые пункты (сверить живьём, не угадывать)
-1. Точный формат JSON `openclaw agent --json` (поле текста) — Task 2 note.
+1. Точный формат JSON `openclaw agent --json` (поле текста: reply/text/message/content) — Task 2 note, сверить запуском.
 2. Как `agent-chat-runner.mjs` получает project/slug — Task 4 Step 1 (определяет, нужен ли env SHECTORY_PROJECT_SLUG).
-3. Подхватывает ли gateway новый агент сразу после записи openclaw.json (hot-reload) или нужен сигнал — проверить на live-тесте T4.
-4. Формат провайдера для openclaw `--model`: gemini→`google` или `gemini`? Сверить (memory reference_openclaw показывает `google/gemini-2.5-flash`). Подогнать modelIdToLinemanTarget-вывод при необходимости.
 
 ## Деплой
 Только портал-репо (CursorRPA): merge feat/portal-openclaw-agent → main, rebuild, restart shectory-portal.service. openclaw.json правится в рантайме (не репо). НЕ требует рестарта Lineman.
