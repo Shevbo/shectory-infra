@@ -48,6 +48,13 @@ sessions_send(sessionKey, "Задача в инбоксе: TASK_1744819200.md")
 Никогда не хардкодить, не публиковать, не передавать. Ключник знает где лежит
 секрет, но никогда не выдаёт его значение.
 
+**Правило 5. Аутентификацию (единая учётка) правит только Claude/`main`.**
+
+Система входа портала и всех приложений Shectory (таблица `portal_users`, auth-код портала,
+`SHECTORY_AUTH_BRIDGE_SECRET`) — зона Claude/Executive Advisor. Другим агентам: не трогать,
+следовать стандарту `~/SHECTORY_AUTH_STANDARD.md`, любую правку запрашивать у `main`.
+Сторож `auth-guard` детектит обходы и алертит Борю.
+
 **Нарушение любого правила = доклад Борису.**
 
 ---
@@ -79,8 +86,7 @@ sessions_send(sessionKey, "Задача в инбоксе: TASK_1744819200.md")
 
 | Модель | Задачи |
 |--------|--------|
-| `gemma-4-e4b-it` | OCR, vision, распознавание картинок |
-| `gemma-4-26b-a4b-it-imatrix` | Суммаризация, HTML, длинный контекст |
+| `qwen/qwen3.5-9b` | OCR, vision, общие задачи (77 tok/s) |
 | `deepseek-r1-distill-qwen-14b` | Рассуждения, сложный анализ |
 
 **Два пути в зависимости от расположения:**
@@ -89,7 +95,7 @@ sessions_send(sessionKey, "Задача в инбоксе: TASK_1744819200.md")
 |------|------|-----|
 | **sdev, vibe, VS Code Claude** | прямой LAN (быстрее) | `http://192.168.1.70:1234/v1/chat/completions` |
 | smain | через Lineman (туннель smain→Pi→hyperv) | `http://127.0.0.1:9090/proxy/lm-studio/v1/chat/completions` |
-| hoster, pi, cloud | через Lineman по WG | `http://10.66.0.1:9090/proxy/lm-studio/v1/chat/completions` |
+| hoster, pi | через Lineman по WG | `http://10.66.0.1:9090/proxy/lm-studio/v1/chat/completions` |
 
 HyperV-local VM (sdev, vibe, VS Code) не нужен WG-туннель: `192.168.1.70:1234` в той же подсети.
 Для LM Studio API-ключ не нужен — `Authorization: Bearer local` (или вообще без).
@@ -151,7 +157,7 @@ ssh smain "cd /home/shectory/workspaces/infra/lineman && \
 | Хост | Адрес прокси | Способ |
 |------|-------------|--------|
 | smain (shectory-work) | `http://127.0.0.1:9090` | локально |
-| sdev, hoster, cloud, pi | `http://10.66.0.1:9090` | WireGuard → smain |
+| sdev, hoster, pi | `http://10.66.0.1:9090` | WireGuard → smain |
 | **vibe (VBoris2)** | **`http://127.0.0.1:19090`** | SSH reverse tunnel → smain |
 
 Это касается: кода агентов, VS Code (`http.proxy` + `remote.env`), `.bashrc`, системных сервисов, docker-compose, `.env` файлов.
@@ -196,6 +202,29 @@ response = requests.get(url, proxies=proxies)
   }
 }
 ```
+
+### Telegram-алерты агентов — только через Lineman
+
+Прямой `api.telegram.org/bot<token>/sendMessage` из кода агента запрещён: токен уезжает в чужой
+`.env`, а рейт-лимит никто не держит. Единая точка:
+
+```bash
+curl -sS -X POST http://10.66.0.1:9090/api/tg/send \
+  -H "Content-Type: application/json" \
+  -d '{"account":"default","chat_id":"36910539","text":"..."}'
+```
+
+Обязательные поля: `account`, `chat_id`, `text`. Опциональные: `parse_mode`, `reply_markup`.
+Токен бота подставляет Lineman, потребителю его не выдают.
+
+| account | Бот | Кому |
+|---|---|---|
+| `default` | @shectory_tank_bot | алерты федерации по умолчанию |
+| `klod` | @ShectoryKlodBot | канал Клода; STL (вотчер торговли) |
+
+Лимиты: 1 сообщение в 15 сек на account (429 + `retry_after`), дедуп одинакового текста 60 сек
+(ответ 200 с `dedup:true`, сообщение НЕ уходит), Telegram режет по 4096 символов.
+Копи события на своей стороне и шли пачкой, уникализируй текст.
 
 ### Куда класть export (важно — non-interactive шеллы)
 
@@ -289,7 +318,7 @@ TankDev и др.) могут запрашивать метаданные сек�
 | Откуда | Адрес |
 |--------|-------|
 | smain (локально) | `http://127.0.0.1:9093` |
-| sdev, hoster, cloud, vibe/pi (WireGuard) | `http://10.66.0.1:9093` |
+| sdev, hoster, vibe/pi (WireGuard) | `http://10.66.0.1:9093` |
 
 **Эндпоинты:**
 
@@ -311,7 +340,6 @@ GET /keymaster/query?name=<SECRET>&requester=<agent_id>  → метаданны�
 | Shopin | `shopin` |
 | ResumeWriter | `resumewriter` |
 | TankDev (sdev) | `tank-dev` |
-| Tank 3 (cloud) | `tank-3` |
 
 **Формат ответа:**
 
@@ -362,7 +390,8 @@ with urllib.request.urlopen(url, timeout=10) as r:
 
 | Агент | ID | Навыки | Когда обращаться |
 |-------|-----|--------|-----------------|
-| Tank 🛠️ | main | Оркестрация, subagents, Google Drive, изображения, встречи | Главный. Все задачи от Бориса сначала сюда. Распределяет между агентами. |
+| **Klod 🤖** | **klod (@ShectoryKlodBot)** | **Главный инженер федерации: Lineman, Keymaster, Censor; правки кода, инциденты, аудит токенов** | **Прямой чат с Клодом в Telegram — @ShectoryKlodBot РАБОТАЕТ. Баг/задача → решение за минуты или тикет в трекер. Отвечает деловыми сообщениями, без LLM-болтовни.** |
+| Tank 🛠️ | main | Оркестрация, subagents, Google Drive, изображения, встречи | Главный (LEGACY). Под ликвидацию — заменяется Klod (@ShectoryKlodBot). LLM-кроны/dreaming отключены 2026-06-16. |
 | Selfcoder ⚡ | selfcoder | Написание кода, рефакторинг | Написать/исправить код. Перед кодом читает `~/workspaces/qaper/qa-knowledge-base.json`. |
 | QAper 🔍 | qaper | Тестирование, поиск багов, qa-knowledge-base | Написать тесты, проверить код. Ведёт базу повторяющихся ошибок. |
 | Virtual Boris 🧠 | virtual-boris | Браузерная автоматизация, интернет-поиск | Исследовать сайты, автоматизировать браузер. |
@@ -414,39 +443,16 @@ Windows 10/11. OpenClaw node.
 
 **LM Studio с vibe:**
 - `POST http://192.168.1.70:1234/v1/chat/completions` — прямой LAN (vibe в той же подсети, что hyperv)
-- Модель: `gemma-4-e4b-it`. Через Lineman не нужно — это лишний крюк через smain.
+- Модель: `qwen/qwen3.5-9b`. Через Lineman не нужно — это лишний крюк через smain.
 
 **Секреты для VBoris2:**
 - Keymaster API: `http://127.0.0.1:19090/api/agent/keymaster/message?from=virtual-boris-vibe&message=...`
 - После получения env-переменной — читать из локального окружения vibe
 
-### cloud — shevbo-cloud (10.66.0.3, user: shevbo) — стабильный VPS
+### cloud — ❌ СПИСАН (2026-06-04)
 
-OpenClaw node. Обычно доступен (не зависит от Бориса).
-
-| Агент | Federation ID | Local OpenClaw ID | Роль |
-|-------|--------------|-------------------|------|
-| Tank 3 ⚡ | tank-3 | main | Основной агент cloud (Gemini-2.5-flash) |
-
-**Клод 3 (Executive Advisor на cloud):**
-```bash
-# Из smain или любого хоста — спросить Клода 3
-ssh cloud '~/scripts/ask-claude.sh "Вопрос"'
-
-# Задача через inbox
-ssh cloud 'cat > ~/workspaces/claude-inbox/TASK_$(date +%s)_SMAIN.md' << 'EOF'
-Тело задачи...
-EOF
-```
-
-**Доступ к Lineman с cloud:**
-- Lineman на smain: `http://10.66.0.1:9090`
-- Keymaster API: `http://10.66.0.1:9093`
-
-**Связь cloud → smain агенты:**
-```bash
-curl "http://10.66.0.1:9090/api/agent/main/message?from=tank-3&message=ping"
-```
+**Узел `cloud` (shevbo-cloud, 10.66.0.3) СПИСАН. Его НЕТ и больше НЕ БУДЕТ.**
+Агентов `tank-3` / «Клод 3» нет. Не стучаться (`ssh cloud` = таймаут), не роутить, не упоминать как активный. Executive Advisors теперь: Клод 2 (smain) и Клод-Доступ (smain).
 
 ### sdev — cursorrpa (10.66.0.4, user: shevbo)
 
@@ -602,14 +608,11 @@ GET http://127.0.0.1:9090/api/agent/{federation_agent_id}/message?from={my_id}&m
 # Написать VBoris2 на vibe (из smain)
 curl "http://127.0.0.1:9090/api/agent/virtual-boris-vibe/message?from=tank&message=Привет+от+Танка"
 
-# Написать Tank 3 на cloud
-curl "http://127.0.0.1:9090/api/agent/tank-3/message?from=tank&message=Привет+от+Tank"
-
 # Написать Keymaster
 curl "http://127.0.0.1:9090/api/agent/keymaster/message?from=selfcoder&message=list_secrets"
 
-# С других хостов (cloud, sdev, vibe, hoster) — тот же URL с WireGuard IP
-curl "http://10.66.0.1:9090/api/agent/main/message?from=tank-3&message=ping"
+# С других хостов (sdev, vibe, hoster) — тот же URL с WireGuard IP
+curl "http://10.66.0.1:9090/api/agent/main/message?from=main&message=ping"
 ```
 
 **Формат ответа (успех):**
@@ -693,6 +696,50 @@ EOF
 
 ---
 
+## 📱 SMS-шлюз (garden-phone) — единый канал критичных SMS-алертов
+
+**Что:** Android-смартфон в LAN Пи (`shevbo-pi`, IP `192.168.1.128:8080`, ethernet 100Мбит) с приложением [SMS Gateway](https://sms-gate.app/) в **Local Server mode**. Стационарный, с DHCP-резервацией. Оператор — активная SIM с балансом.
+
+**Кому доступно:** любому агенту/сервису федерации, которому надо гарантированно доставить SMS Боре (или другим получателям).
+
+**Приоритет использования:**
+- **stl-morning-sms / stl-watchdog** — уже переведены (2026-08-05, [`~/bin/stl-*.sh`](file:///home/shectory/bin/))
+- **garden-manager-app** — приоритет мигрировать `src/lib/sms.ts` (OTP на регистрацию/логин) с внешнего провайдера на этот шлюз. Дешевле, быстрее (Delivered за 5с в LAN), под нашим контролем
+- Прочие агенты — использовать при любом критичном alert-канале Боре (авария, quota, security). Для рассылок клиентам — по согласованию с Борисом (SIM одна, оператор может рейт-лимитить)
+
+### Как отправить SMS (со smain)
+
+```bash
+# Единственно правильный интерфейс — библиотека send-sms.sh
+/home/shectory/bin/send-sms.sh "+7XXXXXXXXXX" "текст сообщения"
+# exit 0 = Delivered (state подтверждён); 1 = failed; 2 = timeout 90с
+# audit: ~/logs/sms/audit.jsonl (JSONL, одна строка = одно отправление)
+```
+
+Внутри библиотека: POST через `ssh -J shevbo-pi curl http://192.168.1.128:8080/message` + polling `state=Delivered`. Креды из Keymaster (`smsgateway_username`, `smsgateway_password`, `smsgateway_local_server`).
+
+### Как отправить SMS (не со smain — sdev/vibe/hoster)
+
+Простейший способ — ssh на smain и запуск библиотеки:
+```bash
+ssh smain '/home/shectory/bin/send-sms.sh "+7XXXXXXXXXX" "текст"'
+```
+
+### Мониторинг
+
+- `sms-gateway-doctor.sh` (cron `*/5` на smain) — пробит `/health` через Pi, проверяет Basic Auth, `messages:failed`, `battery.level`. Алерт в ТГ с дедупом 30 мин
+- Журнал: `~/logs/sms/doctor.jsonl` (state), `~/logs/sms/audit.jsonl` (отправления)
+
+### Хрупкие места (single points of failure)
+
+1. Питание телефона + Ethernet-адаптер
+2. `shevbo-pi` — единственная точка входа в LAN. Пи упал → SMS встали
+3. DHCP-резервация `192.168.1.128` на роутере (сделана 2026-08-05)
+4. Foreground service + battery unrestricted у SMS Gateway app
+5. Активная SIM с балансом
+
+Детальный инцидент cutover (что сломалось 28.07-05.08 и почему): Lineman `04_incidents.md` (2026-08-05).
+
 ## 📧 Почтовый сервер shectory.ru
 
 **Сервер:** Poste.io (Postfix + Dovecot + Rspamd) в Docker на smain.
@@ -740,7 +787,7 @@ def create_mailbox(address: str, password: str, display_name: str = ''):
     ''', (
         address, username, pw_hash,
         f'/data/domains/{domain}/{username}',
-        5000, 5000, display_name or username,
+        8, 8, display_name or username,   # uid/gid=8 (mail). НЕ 5000: Dovecot first_valid_uid=8
         False, False, False, False,
         datetime.datetime.now().isoformat(),
         False, False, domain
@@ -751,6 +798,11 @@ def create_mailbox(address: str, password: str, display_name: str = ''):
 
 create_mailbox('myagent@shectory.ru', 'SecurePassword123', 'My Agent')
 ```
+
+> ⚠️ После вставки нового ящика сбросить auth-кэш Dovecot, иначе доставка
+> отдаёт `550 exceeded mailbox limit` пока кэш не протухнет:
+> `docker exec mail-poste-poste-1 doveadm auth cache flush`
+> uid/gid **обязательно 8** (mail). 5000 ниже `first_valid_uid=8` → Dovecot отвергает.
 
 Из другого хоста (не smain) — через SSH:
 ```bash
@@ -854,29 +906,90 @@ read_inbox('myagent@shectory.ru', 'SecurePassword123')
 
 ---
 
-### Executive Advisors (Клод 2 и Клод 3)
+### Executive Advisors (Клод на smain)
 
-Два инстанса Claude Code. Оба — арбитры над всей федерацией.
+Claude Code на smain — арбитр над всей федерацией. (Клод 3 на cloud упразднён — узел cloud списан.)
 
-**Клод 2 (smain — всегда доступен):**
+**Клод (smain — всегда доступен):**
 ```bash
 ~/scripts/ask-claude.sh "Вопрос"
 ```
 
-**Клод 3 (shevbo-cloud — обычно доступен, стабильный VPS):**
-```bash
-ssh cloud '~/scripts/ask-claude.sh "Вопрос"'
-```
-
 **Задача с файлом:**
 ```bash
-# Для Клода 2
 cat > ~/workspaces/claude-inbox/TASK_$(date +%s)_AGENT.md << 'EOF'
 Тело...
 EOF
-
-# Для Клода 3
-ssh cloud 'cat > ~/workspaces/claude-inbox/TASK_$(date +%s)_AGENT.md' << 'EOF'
-Тело...
-EOF
 ```
+
+---
+
+## 📖 СЛОВАРЬ ФЕДЕРАЦИИ (рабочие термины Бори)
+
+Термины, которые Боря использует в разговоре. Понимать буквально, как описано.
+
+### «Единый браузер»
+**Рабочий термин Бори.** Значит: ОДИН Chrome, в который смотрим оба — и Боря, и я (Claude). Не нужно обмениваться скриншотами: я вижу ту же вкладку, что и он, в реальном времени. И он, и я можем кликать/печатать на сайте в этом же окне через Playwright MCP (CDP). Когда Боря говорит «давай единый браузер» — он хочет, чтобы я работал в его живом Chrome, а не в отдельном headless-окне.
+
+**Точная инструкция по поднятию (проверено 2026-06-03):**
+
+**Шаг 1. Запустить Chrome на Windows** (Win+R или PowerShell):
+
+-  — Chrome DevTools Protocol слушает на Windows:9222
+-  — отдельный профиль, не мешает основному Chrome
+-  — **обязательно** для Chrome 120+, иначе возвращает пустой ответ
+
+**Шаг 2. Поднять обратный SSH-туннель на Windows** (отдельное окно):
+
+-  (не !) = порт 9222 на sdev → Windows:9222 (Chrome)
+- Оставить работать, не закрывать окно
+
+**Шаг 3. Проверка на sdev** — должен вернуть JSON с версией Chrome:
+
+
+**Шаг 4. Claude подключается через CDP:**
+
+
+**Диагностика если не работает:**
+-  → забыт флаг , перезапустить Chrome с ним
+-  → туннель не поднят или упал, поднять шаг 2 заново
+-  → Chrome не запущен с , перезапустить шаг 1
+
+**Точная инструкция по поднятию (проверено 2026-06-03):**
+
+**Шаг 1. Запустить Chrome на Windows** (Win+R или PowerShell):
+```
+"C:\Program Files\Google\Chrome\Application\chrome.exe" --remote-debugging-port=9222 --user-data-dir=C:\garden-shared --remote-allow-origins=*
+```
+- `--remote-debugging-port=9222` — Chrome DevTools Protocol слушает на Windows:9222
+- `--user-data-dir=C:\garden-shared` — отдельный профиль (не трогает основной Chrome)
+- `--remote-allow-origins=*` — **обязательно** для Chrome 120+, без него пустой ответ
+
+**Шаг 2. Обратный SSH-туннель на Windows** (отдельное окно, держать открытым):
+```
+ssh -N -R 9222:127.0.0.1:9222 sdev
+```
+- `-R` (не `-L`!) — sdev:9222 → Windows:127.0.0.1:9222 (Chrome)
+
+**Шаг 3. Проверка на sdev:**
+```bash
+curl -sS http://127.0.0.1:9222/json/version
+```
+Ожидается: `{"Browser": "Chrome/...", "Protocol-Version": "1.3", ...}`
+
+**Шаг 4. Подключение Claude через CDP:**
+```js
+const {chromium} = require('playwright-core');  // путь: /home/shevbo/workspaces/garden-manager-app/node_modules/playwright-core
+const browser = await chromium.connectOverCDP('http://127.0.0.1:9222');
+const ctx = browser.contexts()[0];
+const page = ctx.pages()[0] || await ctx.newPage();
+await page.goto('https://...');
+```
+
+**Диагностика:**
+| Ошибка curl | Причина | Решение |
+|------------|---------|---------|
+| `Empty reply from server` | Нет флага `--remote-allow-origins=*` | Перезапустить Chrome с флагом |
+| `Connection refused` | Туннель не поднят / упал | Повторить шаг 2 |
+| `socket hang up` | Chrome без `--remote-debugging-port` | Повторить шаг 1 |
+
