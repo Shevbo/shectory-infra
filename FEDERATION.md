@@ -100,7 +100,7 @@ sessions_send(sessionKey, "Задача в инбоксе: TASK_1744819200.md")
 HyperV-local VM (sdev, vibe, VS Code) не нужен WG-туннель: `192.168.1.70:1234` в той же подсети.
 Для LM Studio API-ключ не нужен — `Authorization: Bearer local` (или вообще без).
 
-**Доступность:** LM Studio работает пока hyperv включён. Если `502` — hyperv выключен. Lazy Queue автоматически фолбэкнет на Ollama@hoster или DeepSeek-flash.
+**Доступность:** LM Studio работает пока hyperv включён. Если `502` — hyperv выключен. Других локальных бэкендов нет: Ollama@hoster ликвидирован 2026-08-12 (нет ресурсов на hoster, локальный LLM переедет на отдельный хост ~осенью 2026). Lazy Queue при недоступности lm-studio держит job в очереди, а не уходит молча в платный DeepSeek.
 
 ### Lazy Queue — batch и неспешные задачи через local LLM
 
