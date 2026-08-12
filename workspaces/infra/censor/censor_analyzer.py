@@ -136,17 +136,20 @@ SYSTEM_PROMPT = """Ты — аналитик эффективности LLM-аг
 Секции: ## Патологии | ## Рекомендации | ## Итог"""
 
 
-CENSOR_LLM_URL   = "http://127.0.0.1:9090/proxy/ollama-hoster/v1/chat/completions"
-CENSOR_LLM_MODEL = "llama3.2:1b"
-CENSOR_LLM_TIMEOUT = 120  # ollama 1B на hoster CPU может быть медленнее cloud
+# ollama-hoster ликвидирован 2026-08-12 (нет ресурсов на hoster, локальный LLM
+# переедет на отдельный хост). Локальный бэкенд теперь lm-studio; он живёт на
+# hyperv через SSH-туннель и может быть выключен — отсюда fallback на DeepSeek.
+# До правки: 57 вызовов за 90 дней, ВСЕ в ошибку (по 120с таймаута впустую).
+CENSOR_LLM_URL   = "http://127.0.0.1:9090/proxy/lm-studio/v1/chat/completions"
+CENSOR_LLM_MODEL = "qwen/qwen3.5-9b"
+CENSOR_LLM_TIMEOUT = 90
 
 
 def call_deepseek(api_key: str, agg: dict) -> str:
-    # Перевод на local Ollama (llama3.2:1b на hoster) — ноль токенов/денег.
-    # Запрос всё равно идёт через Lineman reverse-proxy для visibility:
-    # source_agent='censor' в request_log + dashboard, маскирование headers.
-    # llama3.2:1b справляется со structured-JSON анализом, fallback на DeepSeek-flash
-    # делаем при сетевой ошибке (ollama-hoster down, например модель не загружена).
+    # Локальный бэкенд (lm-studio) — ноль токенов/денег. Запрос всё равно идёт
+    # через Lineman reverse-proxy для visibility: source_agent='censor' в
+    # request_log + dashboard, маскирование headers. Fallback на DeepSeek-flash
+    # при сетевой ошибке (lm-studio выключен / модель не загружена).
     payload = {
         "model": CENSOR_LLM_MODEL,
         "messages": [
@@ -191,7 +194,7 @@ def call_deepseek(api_key: str, agg: dict) -> str:
                 body = json.loads(resp.read())
                 return f"[fallback: DeepSeek-flash] {body['choices'][0]['message']['content']}"
         except Exception as exc2:
-            return f"[Ollama error: {exc}] [DeepSeek fallback failed: {exc2}]"
+            return f"[local LLM error: {exc}] [DeepSeek fallback failed: {exc2}]"
 
 
 def save_report(ts: datetime, agg: dict, analysis: str) -> Path:
