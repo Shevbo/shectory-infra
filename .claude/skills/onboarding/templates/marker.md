@@ -1,0 +1,1 @@
+> Federation onboarding: карточка агента — [.onboarding/AGENT.md](.onboarding/AGENT.md). Канон федерации локально НЕ хранится: спрашивай индекс `POST http://10.66.0.1:9090/api/fedrag/search` с телом `{"query":"..."}`. Обновить карточку — `/onboarding`.
