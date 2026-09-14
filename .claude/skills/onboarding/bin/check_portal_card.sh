@@ -12,7 +12,7 @@ NODE="${2:?node required}"
 PURPOSE="${3:-}"
 
 API_BASE="${PORTAL_API_BASE:-https://dashboard.shectory.ru/api}"
-KLOD_INBOX="${KLOD_INBOX:-http://10.66.0.1:9090/api/agent/klod-access/message}"
+SELF_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # GET probe
 code="$(curl -sS -o /tmp/portal_card_$$.json -w '%{http_code}' --max-time 6 \
@@ -45,7 +45,8 @@ esac
 
 # Fallback: tell Klod the card is missing — он создаст руками или поднимет ручку
 msg="portal-card-missing: agent=$AGENT node=$NODE purpose=${PURPOSE:-unknown} probe_http=$code"
-curl -sS --max-time 5 -X POST \
-     "$KLOD_INBOX?from=$AGENT&node=$NODE&topic=portal-card" \
-     -H 'Content-Type: text/plain' --data "$msg" >/dev/null 2>&1 || true
+# Через klod_http.sh: иначе с узла без WG сообщение о пропавшей карточке тоже терялось.
+printf '%s' "$msg" | "$SELF_DIR/klod_http.sh" POST \
+     "/api/agent/klod-access/message?from=$AGENT&node=$NODE&topic=portal-card" - text/plain \
+     >/dev/null 2>&1 || true
 echo "portal-card=reported-missing agent=$AGENT probe_http=$code"

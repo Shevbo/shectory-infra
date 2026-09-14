@@ -9,8 +9,9 @@ SINCE="0"
 [[ -r "$CURSOR_FILE" ]] && SINCE="$(cat "$CURSOR_FILE" | tr -dc '0-9')"
 [[ -z "$SINCE" ]] && SINCE="0"
 
-API="${KLOD_OUTBOX:-http://10.66.0.1:9090/api/agent/klod-access/outbox}"
-resp="$(curl -sS --max-time 6 "$API?to=$AGENT&since=$SINCE&limit=10" 2>/dev/null || true)"
+# Через klod_http.sh: напрямую, а на узлах без WG — ssh-jump на Pi.
+SELF_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+resp="$("$SELF_DIR/klod_http.sh" GET "/api/agent/klod-access/outbox?to=$AGENT&since=$SINCE&limit=10" 2>/dev/null || true)"
 [[ -z "$resp" ]] && { echo "inbox=unreachable"; exit 0; }
 
 python3 - "$resp" "$CURSOR_FILE" "$AGENT" <<'PY'

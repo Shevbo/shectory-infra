@@ -34,7 +34,7 @@ remote_sha=""
 if [[ -r /home/shectory/docs/FEDERATION_AGENT_ONBOARDING.md ]]; then
   remote_sha="$(sha256sum /home/shectory/docs/FEDERATION_AGENT_ONBOARDING.md | awk '{print $1}')"
 else
-  raw="$(curl -sS --max-time 3 http://10.66.0.1:9090/api/onboarding/canon.sha256 2>/dev/null | tr -d ' \n' || true)"
+  raw="$(KLOD_HTTP_TIMEOUT=3 "$(dirname "${BASH_SOURCE[0]}")/klod_http.sh" GET /api/onboarding/canon.sha256 2>/dev/null | tr -d ' \n' || true)"
   if [[ "$raw" =~ ^[0-9a-f]{64}$ ]]; then
     remote_sha="$raw"
   fi

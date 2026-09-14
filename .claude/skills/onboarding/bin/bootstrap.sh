@@ -51,15 +51,15 @@ CANON_SHA="unknown"
 if [[ -r /home/shectory/docs/FEDERATION_AGENT_ONBOARDING.md ]]; then
   CANON_SHA="$(sha256sum /home/shectory/docs/FEDERATION_AGENT_ONBOARDING.md | awk '{print $1}')"
 else
-  raw="$(curl -sS --max-time 5 http://10.66.0.1:9090/api/onboarding/canon.sha256 2>/dev/null | tr -d ' \n' || true)"
+  raw="$(KLOD_HTTP_TIMEOUT=5 "$SKILL_DIR/bin/klod_http.sh" GET /api/onboarding/canon.sha256 2>/dev/null | tr -d ' \n' || true)"
   [[ "$raw" =~ ^[0-9a-f]{64}$ ]] && CANON_SHA="$raw"
 fi
 
 # Проверка, что индекс отвечает. Недоступность не валит онбординг: карточка
 # самодостаточна, а агент узнаёт из отчёта, что канон сверить не удалось.
-FEDRAG_STATE="$(curl -sS --max-time 60 -X POST http://10.66.0.1:9090/api/fedrag/search \
-    -H "X-Agent-Name: $agent_id" -H 'Content-Type: application/json' \
-    -d '{"query":"контракт агента федерации"}' 2>/dev/null \
+FEDRAG_STATE="$(printf '%s' '{"query":"контракт агента федерации"}' \
+  | KLOD_HTTP_TIMEOUT=60 KLOD_AGENT="$agent_id" "$SKILL_DIR/bin/klod_http.sh" \
+      POST /api/fedrag/search - application/json 2>/dev/null \
   | python3 -c 'import json,sys; print(json.load(sys.stdin).get("source","no-answer"))' 2>/dev/null \
   || echo unreachable)"
 echo "fedrag=$FEDRAG_STATE"
@@ -124,6 +124,14 @@ curl -sS -m 60 -X POST http://10.66.0.1:9090/api/fedrag/search \\
 В индексе: канон онбординга, контракты всех агентов, карта узлов, реестр компонентов,
 журналы инцидентов, проектная память. Ответ приходит с путём файла и номерами строк —
 первоисточник читается точечно, а не целиком.
+
+**Узел без WireGuard** (Windows, IoT): \`10.66.0.1\` оттуда недостижим. Тот же запрос через
+помощник онбординга — он сам уйдёт через ssh-jump на Pi:
+
+\`\`\`bash
+echo '{"query":"свой вопрос обычными словами"}' | KLOD_AGENT=$agent_id \\
+  ~/.claude/skills/onboarding/bin/klod_http.sh POST /api/fedrag/search - application/json
+\`\`\`
 
 \`"source": "fallback"\` в ответе = индекс недоступен: действуй по этой карточке, чего
 в ней нет — спрашивай Клода каналом ниже. Не выдумывай.

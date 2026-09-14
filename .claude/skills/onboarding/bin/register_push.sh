@@ -20,15 +20,16 @@ if [[ -z "$URL" ]]; then
   exit 0
 fi
 
-API="${KLOD_PUSH_URL_API:-http://10.66.0.1:9090/api/agent/klod-access/push_url}"
+SELF_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 clear_flag="${ONBOARDING_CLEAR_PUSH:-0}"
 if [[ "$clear_flag" == "1" ]]; then
   URL=""
 fi
 
-resp="$(curl -sS --max-time 5 -X POST "$API?agent=$AGENT&url=$URL" 2>/dev/null || true)"
+# Через klod_http.sh: напрямую, а на узлах без WG — ssh-jump на Pi.
+resp="$("$SELF_DIR/klod_http.sh" POST "/api/agent/klod-access/push_url?agent=$AGENT&url=$URL" 2>/dev/null || true)"
 if [[ -z "$resp" ]]; then
-  echo "push_url=unreachable api=$API"
+  echo "push_url=unreachable via=klod_http"
   exit 0
 fi
 if echo "$resp" | grep -q '"status": "ok"'; then
